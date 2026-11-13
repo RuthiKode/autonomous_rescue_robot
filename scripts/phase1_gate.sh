@@ -48,6 +48,9 @@ ros2 topic list | tr '\n' ' '; echo
 echo "--- sensor_check (rates from sim-time stamps, noise on a stationary robot)"
 ros2 run rescue_eval sensor_check --duration 10
 
+echo "--- Gazebo real-time factor"
+timeout 5 gz topic -e -t /stats -n 1 2>/dev/null | grep real_time_factor
+
 echo "--- ros2 topic hz (wall clock)"
 for t in /scan /imu /camera/image_raw; do
   echo "$t: $(timeout 10 ros2 topic hz $t --window 500 2>&1 | grep 'average rate' | tail -1)"
@@ -64,6 +67,10 @@ echo "odom before:  $(odom)"
 sleep 1
 echo "odom after:   $(odom)"
 echo "true pose (Gazebo): $(true_pose)"
+echo "--- odometry: raw wheel odometry against the EKF output"
+ros2 run rescue_eval odom_check
+gz model -m rescue_robot -p 2>/dev/null | tail -2 | tr '\n' ' '; echo "(Gazebo true XYZ, RPY)"
+echo "/odometry/filtered: $(timeout 10 ros2 topic hz /odometry/filtered --window 300 2>&1 | grep 'average rate' | tail -1)"
 
 if [ "$FRAMES" = "--frames" ]; then
   echo "--- TF tree (tf2_tools view_frames)"

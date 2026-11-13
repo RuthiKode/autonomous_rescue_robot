@@ -2,7 +2,7 @@
 
 Run on 2026-11-13: Ubuntu 24.04.5 under WSL2 (kernel 6.6.87.2), ROS 2 Jazzy, Gazebo Harmonic 8.15.0, RTX 4050 Laptop GPU with Windows driver 591.74.
 
-**Result:** four of the five gate checks pass. The TF check passes only in part: there is no duplicate `odom -> base_link` publisher, but the `map -> odom -> base_link` part of the plan's tree does not exist yet, because nothing in Phase 1 publishes it (see "TF tree" below).
+**Result:** all five gate checks pass, with one stated limit on the TF check: `map -> odom` does not exist yet, because slam_toolbox publishes it and SLAM is Phase 2. The EKF was added after the first review, at your request; sections 3 and 4 hold the figures measured with it running.
 
 ## Setup
 
@@ -91,25 +91,44 @@ topic               frame_id               received  sim span s  rate Hz  frame-
 /camera/depth       camera_optical_link         110       10.03    14.93  0.01419 m
 ```
 
-### 4. TF tree: partial
+With the EKF running, a second pass over all three worlds gave the same sim-time rates, a Gazebo real-time factor of 1.000, and wall-clock camera rates of 10.6-13.2 Hz. One earlier run, started right after a build, showed 2.6 Hz for the camera by wall clock; it did not repeat.
+
+### 4. TF tree: pass, except `map -> odom` (Phase 2)
 
 ```bash
 ros2 run tf2_tools view_frames
 ```
 
-Observed tree (rooms world), every transform broadcast by `robot_state_publisher`:
+Observed tree (rooms world):
 
 ```text
-base_link -> laser_link
-base_link -> camera_link -> camera_optical_link
-base_link -> imu_link
-base_link -> chassis_link, caster_front, caster_rear   (static)
-base_link -> left_wheel, right_wheel                   (from /joint_states)
+odom -> base_link                                      ekf_filter_node, 30.2 Hz
+base_link -> laser_link                                robot_state_publisher (static)
+base_link -> camera_link -> camera_optical_link        robot_state_publisher (static)
+base_link -> imu_link                                  robot_state_publisher (static)
+base_link -> chassis_link, caster_front, caster_rear   robot_state_publisher (static)
+base_link -> left_wheel, right_wheel                   robot_state_publisher, from /joint_states
 ```
 
-`ros2 topic info /tf -v` and `/tf_static -v` each show one publisher, `robot_state_publisher`. There are zero `odom -> base_link` publishers: the diff-drive plugin's transform goes to the Gazebo topic `diff_drive/tf_unbridged`, which the bridge does not carry.
+`ros2 topic info /tf -v` lists two publishers, `ekf_filter_node` and `robot_state_publisher`, and they publish different transforms. `odom -> base_link` has one broadcaster. The diff-drive plugin's own transform goes to the Gazebo topic `diff_drive/tf_unbridged`, which the bridge does not carry.
 
-What is missing against the plan's tree: `map -> odom` (slam_toolbox, Phase 2) and `odom -> base_link` (EKF). This session's instructions say the EKF comes later, so I did not add it. The plan's week-1 gate says "TF tree matches the contract", which reads as if the EKF should already run. This needs your decision.
+`map -> odom` is missing because slam_toolbox publishes it and SLAM is Phase 2.
+
+**EKF** (`rescue_bringup/config/ekf.yaml`, switch off with `ekf:=false`): fuses forward and lateral velocity from `/odom_raw` with the yaw rate from `/imu`, and publishes `/odometry/filtered` at about 29 Hz. Pose after driving forward 2 s and turning left 2 s by teleop (`ros2 run rescue_eval odom_check`):
+
+| World | Source | x (m) | y (m) | yaw (rad) |
+| --- | --- | --- | --- | --- |
+| rooms | `/odom_raw` | 0.9570 | 0.0000 | 1.9190 |
+| rooms | `/odometry/filtered` | 0.9569 | -0.0303 | 2.0761 |
+| rooms | Gazebo truth | 0.9552 | 0.0008 | 2.1120 |
+| collapsed | `/odom_raw` | 0.9785 | 0.0000 | 1.9250 |
+| collapsed | `/odometry/filtered` | 0.9786 | 0.0261 | 2.1509 |
+| collapsed | Gazebo truth | 0.9767 | 0.0008 | 2.1188 |
+| open_plan | `/odom_raw` | 0.9800 | 0.0000 | 1.9260 |
+| open_plan | `/odometry/filtered` | 0.9802 | -0.0264 | 2.0898 |
+| open_plan | Gazebo truth | 0.9782 | 0.0008 | 2.1200 |
+
+The yaw error falls from about 0.19 rad (raw) to 0.03-0.04 rad (filtered). The filtered pose drifts sideways by up to 3 cm over the 1 m drive, which raw odometry does not.
 
 ### 5. Evaluation script: pass
 
@@ -148,12 +167,14 @@ Generated with seed 42: rooms has 3 survivors, collapsed 4, open_plan 3. Each wo
 - **`seed` means the Gazebo random seed.** `run_eval --seed` and `seed:=` set `gz sim --seed` (sensor noise). The world layout seed is separate, in `world_generator.yaml`. The plan does not say which one a run seed is.
 - **World frame equals map frame by construction.** The robot always spawns at the world origin facing +x, so ground-truth poses are valid in `map` once SLAM starts there.
 - **GPU rendering needs two environment variables under WSL2.** Mesa picked software rendering (llvmpipe) by default. The launch file sets `GALLIUM_DRIVER=d3d12` and `MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA` from `rescue_bringup/config/sim.yaml`; the Ogre log then reports `D3D12 (NVIDIA GeForce RTX 4050 Laptop GPU)`. The adapter variable alone, as the plan suggests, was not enough.
-- **Extras:** `rescue_eval sensor_check` and `scripts/phase1_gate.sh` were added to make the gate reproducible. `MissionState` is not defined yet; Phase 1 does not use it.
+- **The EKF runs in Phase 1.** The session prompt put it later; it was added on your instruction so `odom -> base_link` exists. Wheel yaw rate and the IMU orientation are deliberately not fused: the first is biased in turns, the second is noise-free in Gazebo.
+- **Extras:** `rescue_eval sensor_check`, `rescue_eval odom_check` and `scripts/phase1_gate.sh` were added to make the gate reproducible. `MissionState` is not defined yet; Phase 1 does not use it.
 - **`.wslconfig` was left as found** (`memory=12GB`, `swap=4GB`, `processors=6`); the plan suggests 10 GB, 8 GB and 8.
 
 ## Known issues
 
-- **Wheel odometry under-reports turning by about 11%.** After turning in place at 1 rad/s for 4 s, `/odom_raw` gave a yaw of 4.09 rad and Gazebo's true yaw was 4.58 rad. My reading is that the wheels pivot on a narrower track than `wheel_separation` (0.34 m); I did not test that. Straight-line odometry is within 2 mm over 1 m, so the low friction (`wheel_mu` 0.35) causes little slip when driving straight.
+- **Wheel odometry under-reports turning by about 11%.** After turning in place at 1 rad/s for 4 s, `/odom_raw` gave a yaw of 4.09 rad and Gazebo's true yaw was 4.58 rad. My reading is that the wheels pivot on a narrower track than `wheel_separation` (0.34 m); I did not test that. Straight-line odometry is within 2 mm over 1 m, so the low friction (`wheel_mu` 0.35) causes little slip when driving straight. The EKF corrects most of the yaw error (check 4).
+- **The EKF is untuned.** It uses robot_localization's default process noise, and the Gazebo messages carry zero covariances. The 3 cm sideways drift over 1 m is the visible effect.
 - **Images are dropped on the way to Python subscribers** (see check 3). Later nodes should use sensor-data QoS and expect gaps.
 - **A lying survivor is barely visible to the LiDAR.** The scan plane is at 0.20 m and a lying body is at most 0.22 m high, so the LiDAR only grazes the torso and head. This is the case the plan expects the depth camera to cover. Not measured.
 - **Reachability is not checked by the generator.** Keep-out circles hold doorways, gaps and the spawn clear, but no path search proves every survivor can be reached.

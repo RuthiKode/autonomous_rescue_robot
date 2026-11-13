@@ -50,7 +50,17 @@ def _setup(context):
     xacro_file = os.path.join(desc_share, 'urdf', 'rescue_robot.urdf.xacro')
     robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
 
-    return [
+    ekf = []
+    if LaunchConfiguration('ekf').perform(context).lower() in ('true', '1'):
+        ekf.append(Node(
+            package='robot_localization',
+            executable='ekf_node',
+            name='ekf_filter_node',
+            output='screen',
+            parameters=[os.path.join(bringup_share, 'config', 'ekf.yaml'), sim_time],
+        ))
+
+    return ekf + [
         ExecuteProcess(cmd=gz_cmd, additional_env=gz_env, output='screen'),
         Node(
             package='robot_state_publisher',
@@ -103,5 +113,7 @@ def generate_launch_description():
                               description='true runs the Gazebo server only (no GUI)'),
         DeclareLaunchArgument('seed', default_value='0',
                               description='Gazebo random seed (sensor noise)'),
+        DeclareLaunchArgument('ekf', default_value='true',
+                              description='true starts the EKF that publishes odom -> base_link'),
         OpaqueFunction(function=_setup),
     ])

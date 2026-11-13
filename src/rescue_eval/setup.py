@@ -24,6 +24,7 @@ setup(
         'console_scripts': [
             'run_eval = rescue_eval.run_eval:main',
             'sensor_check = rescue_eval.sensor_check:main',
+            'odom_check = rescue_eval.odom_check:main',
         ],
     },
 )
