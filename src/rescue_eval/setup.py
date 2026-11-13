@@ -23,6 +23,7 @@ setup(
     entry_points={
         'console_scripts': [
             'run_eval = rescue_eval.run_eval:main',
+            'sensor_check = rescue_eval.sensor_check:main',
         ],
     },
 )

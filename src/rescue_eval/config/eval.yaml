@@ -1,0 +1,26 @@
+# Defaults for `ros2 run rescue_eval run_eval`. Command-line options override them.
+
+method: none                # label of the condition being evaluated (no autonomy in Phase 1)
+duration_s: 20.0            # sim seconds to record
+startup_timeout_s: 120.0    # wall seconds to wait for /clock to start advancing
+run_timeout_factor: 10.0    # give up after duration_s * factor wall seconds
+shutdown_timeout_s: 20.0    # wall seconds between SIGINT and SIGKILL
+output_dir: results         # relative to the current directory unless absolute
+csv_name: runs.csv
+
+# Topics written to the rosbag. Topics that do not exist yet are simply empty.
+# Camera images are left out on purpose: they dominate the bag size.
+record_topics:
+  - /scan
+  - /imu
+  - /odom_raw
+  - /odometry/filtered
+  - /camera/camera_info
+  - /cmd_vel
+  - /tf
+  - /tf_static
+  - /map
+  - /detections
+  - /survivors
+  - /mission/state
+  - /ground_truth/survivors
