@@ -1,0 +1,37 @@
+# Generated ground truth. Poses are in the map frame (robot spawn = origin).
+world: open_plan
+seed: 42
+frame_id: map
+bounds:
+  size_x: 24.0
+  size_y: 18.0
+robot_spawn:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  yaw: 0.0
+survivors:
+- id: 1
+  posture: lying
+  occluded: false
+  position:
+    x: -5.4629
+    y: 0.2594
+    z: 0.11
+  yaw: -2.0979
+- id: 2
+  posture: standing
+  occluded: false
+  position:
+    x: 7.7461
+    y: 1.5977
+    z: 0.85
+  yaw: -0.1511
+- id: 3
+  posture: sitting
+  occluded: true
+  position:
+    x: 6.6099
+    y: -3.158
+    z: 0.4
+  yaw: -1.0238

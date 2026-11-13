@@ -1,0 +1,52 @@
+# Parameters of the seeded world generator (rescue_simulation generate_worlds).
+# Units: metres, radians, seconds. The robot always spawns at the world origin
+# facing +x, so world coordinates equal map-frame coordinates once SLAM starts there.
+
+seed: 42
+
+common:
+  wall_height: 2.0
+  wall_thickness: 0.15
+  physics_step_s: 0.001
+  real_time_factor: 1.0
+  shadows: false
+  spawn_clear_radius: 1.2      # nothing is placed this close to the robot spawn
+  survivors:
+    min: 3
+    max: 5
+  occluded_fraction: 0.4       # share of survivors that get an occluding object (at least one)
+
+worlds:
+  rooms:
+    layout: rooms
+    size_x: 16.0
+    size_y: 12.0
+    corridor_width: 2.0
+    rooms_per_side: 4
+    door_width: 1.0
+    furniture_per_room: 2
+
+  collapsed:
+    layout: collapsed
+    size_x: 14.0
+    size_y: 14.0
+    gap_width: 0.7             # free width of every passage through a rubble barrier
+    gaps_per_barrier: 2
+    barrier_x: 2.5             # rubble barrier along y at this x (full depth of the floor)
+    barrier_y: 2.0             # rubble barrier along x at this y (from the west wall to barrier_x)
+    debris_clusters: 6
+    debris_pieces:
+      min: 5
+      max: 10
+    fallen_slabs: 4
+
+  open_plan:
+    layout: open_plan
+    size_x: 24.0
+    size_y: 18.0
+    pillar_spacing_x: 6.0
+    pillar_spacing_y: 9.0
+    pillar_size: 0.5
+    clutter_items: 35
+    min_survivor_distance: 4.0  # from the robot spawn
+    survivor_spacing: 3.0       # approximate minimum distance between survivors
