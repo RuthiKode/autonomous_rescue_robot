@@ -16,6 +16,12 @@ common:
     max: 5
   occluded_fraction: 0.4       # share of survivors that get an occluding object (at least one)
 
+# Ground-truth occupancy grid written next to every world (<world>_truth_map.png/.yaml).
+grid:
+  resolution: 0.05             # metres per cell, same as the SLAM map
+  margin_m: 0.5                # border of unknown cells around the outer walls
+  slice_z: 0.20                # height of the cut; must equal lidar_z in robot_params.xacro
+
 worlds:
   rooms:
     layout: rooms

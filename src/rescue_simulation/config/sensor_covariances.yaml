@@ -1,0 +1,30 @@
+# Covariances written into /imu and /odom_raw by covariance_stamper.
+# Gazebo publishes both with all-zero covariance matrices, which robot_localization
+# would read as "perfect". Every value is a variance (standard deviation squared).
+
+imu:
+  # Gyro white noise: imu_gyro_noise_stddev = 0.002 rad/s in robot_params.xacro.
+  # 0.002^2 = 4.0e-6. A unit test checks this value against the Xacro.
+  angular_velocity_variance: 4.0e-6
+  # Accelerometer white noise: imu_accel_noise_stddev = 0.02 m/s^2 in robot_params.xacro.
+  # 0.02^2 = 4.0e-4. Checked by the same unit test. (The EKF does not fuse acceleration.)
+  linear_acceleration_variance: 4.0e-4
+  # Gazebo's IMU orientation has no noise model, so it is marked "not provided":
+  # per sensor_msgs/Imu, element 0 of the orientation covariance is set to -1.
+  orientation_available: false
+
+odom:
+  # Wheel odometry has no configured noise in Gazebo; its error is slip and
+  # acceleration lag. These two are measured, not derived: the mean square of
+  # (odom twist - Gazebo true twist) while the robot is moving, over 5 drive
+  # trials in the rooms world (results/phase2/geometry_after.csv, docs/PHASE2.md 0c).
+  # Measured 7.27e-5 (m/s)^2 and 4.97e-4 (rad/s)^2, rounded up.
+  vx_variance: 7.5e-5
+  vyaw_variance: 5.0e-4
+  # The robot cannot move sideways. A small variance lets the EKF use vy = 0
+  # as a constraint without making the matrix singular. Chosen, not measured.
+  vy_variance: 1.0e-4
+  # Pose in /odom_raw is integrated wheel odometry. The EKF does not fuse it;
+  # these grow-free placeholders only keep the matrix well formed. Chosen.
+  pose_position_variance: 1.0e-2
+  pose_yaw_variance: 1.0e-1

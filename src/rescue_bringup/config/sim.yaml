@@ -16,3 +16,4 @@ gz_environment:
 ground_truth:
   publish_rate_hz: 1.0
   topic: /ground_truth/survivors
+  marker_topic: /ground_truth/survivor_markers

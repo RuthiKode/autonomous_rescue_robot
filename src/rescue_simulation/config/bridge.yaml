@@ -2,7 +2,11 @@
 # onto the ROS topic contract in docs/PLAN.md.
 #
 # The diff-drive plugin's odom->base_link transform is deliberately NOT bridged
-# to /tf. The EKF will be the only odom->base_link publisher.
+# to /tf. The EKF is the only odom->base_link publisher.
+#
+# Gazebo publishes IMU and odometry with all-zero covariances. They are bridged
+# to /gz/imu and /gz/odom_raw; the covariance_stamper node fills the covariances
+# in (config/sensor_covariances.yaml) and republishes them as /imu and /odom_raw.
 
 - ros_topic_name: "/clock"
   gz_topic_name: "/clock"
@@ -16,13 +20,13 @@
   gz_type_name: "gz.msgs.LaserScan"
   direction: GZ_TO_ROS
 
-- ros_topic_name: "/imu"
+- ros_topic_name: "/gz/imu"
   gz_topic_name: "/imu"
   ros_type_name: "sensor_msgs/msg/Imu"
   gz_type_name: "gz.msgs.IMU"
   direction: GZ_TO_ROS
 
-- ros_topic_name: "/odom_raw"
+- ros_topic_name: "/gz/odom_raw"
   gz_topic_name: "/odom_raw"
   ros_type_name: "nav_msgs/msg/Odometry"
   gz_type_name: "gz.msgs.Odometry"
@@ -35,7 +39,7 @@
   direction: GZ_TO_ROS
 
 - ros_topic_name: "/camera/depth"
-  gz_topic_name: "/camera/depth_image"
+  gz_topic_name: "/depth_camera/image"
   ros_type_name: "sensor_msgs/msg/Image"
   gz_type_name: "gz.msgs.Image"
   direction: GZ_TO_ROS
@@ -58,4 +62,11 @@
   gz_topic_name: "/joint_states"
   ros_type_name: "sensor_msgs/msg/JointState"
   gz_type_name: "gz.msgs.Model"
+  direction: GZ_TO_ROS
+
+# Simulation only, evaluation only: Gazebo's true pose of base_link in the world frame.
+- ros_topic_name: "/ground_truth/odom"
+  gz_topic_name: "/ground_truth/odom"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
   direction: GZ_TO_ROS

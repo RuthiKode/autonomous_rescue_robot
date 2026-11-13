@@ -1,4 +1,4 @@
-"""Start Gazebo with one generated world, the robot, the bridge and the ground-truth node.
+"""Start Gazebo with one generated world, the robot, the bridge, the EKF and ground truth.
 
   ros2 launch rescue_bringup sim.launch.py world:=rooms headless:=false
 
@@ -17,9 +17,12 @@ from launch_ros.parameter_descriptions import ParameterValue
 import yaml
 
 
+def _flag(context, name):
+    return LaunchConfiguration(name).perform(context).lower() in ('true', '1')
+
+
 def _setup(context):
     world = LaunchConfiguration('world').perform(context)
-    headless = LaunchConfiguration('headless').perform(context).lower() in ('true', '1')
     seed = LaunchConfiguration('seed').perform(context)
 
     sim_share = get_package_share_directory('rescue_simulation')
@@ -41,7 +44,7 @@ def _setup(context):
     spawn = truth['robot_spawn']
 
     gz_cmd = ['gz', 'sim', '-r', '--seed', seed]
-    if headless:
+    if _flag(context, 'headless'):
         gz_cmd.append('-s')
     gz_cmd.append(world_file)
     gz_env = {k: str(v) for k, v in cfg['gz_environment'].items() if str(v) != ''}
@@ -50,17 +53,7 @@ def _setup(context):
     xacro_file = os.path.join(desc_share, 'urdf', 'rescue_robot.urdf.xacro')
     robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
 
-    ekf = []
-    if LaunchConfiguration('ekf').perform(context).lower() in ('true', '1'):
-        ekf.append(Node(
-            package='robot_localization',
-            executable='ekf_node',
-            name='ekf_filter_node',
-            output='screen',
-            parameters=[os.path.join(bringup_share, 'config', 'ekf.yaml'), sim_time],
-        ))
-
-    return ekf + [
+    actions = [
         ExecuteProcess(cmd=gz_cmd, additional_env=gz_env, output='screen'),
         Node(
             package='robot_state_publisher',
@@ -94,15 +87,56 @@ def _setup(context):
         ),
         Node(
             package='rescue_simulation',
+            executable='covariance_stamper',
+            output='screen',
+            parameters=[
+                {'config_file': os.path.join(sim_share, 'config', 'sensor_covariances.yaml')},
+                sim_time,
+            ],
+        ),
+        Node(
+            package='rescue_simulation',
             executable='ground_truth_publisher',
             output='screen',
             parameters=[{
                 'truth_file': truth_file,
                 'publish_rate_hz': float(cfg['ground_truth']['publish_rate_hz']),
                 'topic': cfg['ground_truth']['topic'],
+                'marker_topic': cfg['ground_truth']['marker_topic'],
             }, sim_time],
         ),
     ]
+
+    if _flag(context, 'ekf'):
+        actions.append(Node(
+            package='robot_localization',
+            executable='ekf_node',
+            name='ekf_filter_node',
+            output='screen',
+            parameters=[os.path.join(bringup_share, 'config', 'ekf.yaml'), sim_time],
+        ))
+
+    if _flag(context, 'static_map_tf'):
+        # Stand-in for SLAM so map-frame data can be viewed in Phase 1. Never
+        # combine with slam_toolbox: both would publish map -> odom.
+        actions.append(Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_map_to_odom',
+            arguments=['--frame-id', 'map', '--child-frame-id', 'odom'],
+            parameters=[sim_time],
+        ))
+
+    if _flag(context, 'rviz'):
+        actions.append(Node(
+            package='rviz2',
+            executable='rviz2',
+            arguments=['-d', os.path.join(bringup_share, 'rviz',
+                                          LaunchConfiguration('rviz_config').perform(context))],
+            parameters=[sim_time],
+            additional_env=gz_env,
+        ))
+    return actions
 
 
 def generate_launch_description():
@@ -115,5 +149,11 @@ def generate_launch_description():
                               description='Gazebo random seed (sensor noise)'),
         DeclareLaunchArgument('ekf', default_value='true',
                               description='true starts the EKF that publishes odom -> base_link'),
+        DeclareLaunchArgument('static_map_tf', default_value='false',
+                              description='true publishes a fixed identity map -> odom '
+                                          '(only without SLAM)'),
+        DeclareLaunchArgument('rviz', default_value='false', description='true starts RViz2'),
+        DeclareLaunchArgument('rviz_config', default_value='phase1.rviz',
+                              description='file name inside rescue_bringup/rviz'),
         OpaqueFunction(function=_setup),
     ])

@@ -1,0 +1,27 @@
+# `ros2 run rescue_eval auto_drive`: a scripted stand-in for a person teleoperating.
+# It plans a tour on the generator's own geometry and steers on Gazebo's true
+# pose. It exists only to produce /cmd_vel recordings for repeatable mapping runs.
+
+robot_height_m: 0.30         # anything lower than this can be hit by the robot body
+grid_resolution: 0.05
+inflation_m: 0.40            # planning clearance from obstacles, measured from base_link
+clearance_weight: 0.6        # how strongly the planner prefers the middle of free space
+min_goal_spacing_m: 3.0
+
+# Number of tour goals per world. Goals are picked by farthest-point sampling
+# over the cells reachable from the spawn, then visited nearest-first, and the
+# tour returns to the start so SLAM gets a loop to close.
+goals:
+  rooms: 5
+  collapsed: 4
+  open_plan: 5
+
+follower:
+  tolerance_m: 0.15
+  k_linear: 1.0
+  min_linear: 0.10
+  max_linear: 0.45
+  k_angular: 2.0
+  max_angular: 1.0
+  turn_in_place_rad: 0.6
+  waypoint_timeout_wall_s: 180.0

@@ -14,7 +14,7 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import qos_profile_sensor_data, QoSProfile
 from sensor_msgs.msg import Image, Imu, LaserScan
 
 
@@ -66,8 +66,10 @@ class SensorCheck(Node):
         qos = qos_profile_sensor_data
         self.create_subscription(LaserScan, '/scan', self._scan, qos)
         self.create_subscription(Imu, '/imu', self._imu, qos)
-        self.create_subscription(Image, '/camera/image_raw', self._image, qos)
-        self.create_subscription(Image, '/camera/depth', self._depth, qos)
+        # Reliable for images: best-effort loses large frames (docs/PHASE2.md, step 0a).
+        image_qos = QoSProfile(depth=30)
+        self.create_subscription(Image, '/camera/image_raw', self._image, image_qos)
+        self.create_subscription(Image, '/camera/depth', self._depth, image_qos)
 
     def _scan(self, msg):
         self.tracks['/scan'].add(msg, np.array(msg.ranges, dtype=np.float64))

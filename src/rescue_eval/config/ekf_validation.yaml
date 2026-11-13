@@ -1,0 +1,28 @@
+# Drives used by `ros2 run rescue_eval ekf_validation`.
+
+startup_timeout_s: 120.0     # wall seconds to wait for all odometry topics
+settle_s: 2.0                # sim seconds standing still before and after a drive
+
+# Open-loop drive test: the same commands every trial.
+drive:
+  forward_speed: 0.5         # m/s
+  forward_s: 2.0
+  pause_s: 1.0
+  turn_rate: 1.0             # rad/s
+  turn_s: 2.0
+
+# Square loop: corners in the world frame, followed with ground-truth feedback.
+# Sized to stay inside the 1.2 m clear radius around the spawn in every world.
+square:
+  corners: [[0.7, 0.0], [0.7, 0.5], [0.0, 0.5], [0.0, 0.0]]
+  laps: 3
+
+follower:
+  tolerance_m: 0.05
+  k_linear: 1.0
+  min_linear: 0.05
+  max_linear: 0.4
+  k_angular: 2.5
+  max_angular: 1.2
+  turn_in_place_rad: 0.35
+  waypoint_timeout_wall_s: 120.0

@@ -1,9 +1,11 @@
 # robot_localization EKF: the only publisher of odom -> base_link.
 #
-# Wheel odometry supplies forward and lateral velocity. The IMU gyro supplies
-# the yaw rate. Wheel yaw rate is left out on purpose: the wheels slip and
-# pivot in turns, so it is the least trustworthy signal on this robot.
-# The Gazebo IMU orientation is not fused either, because it is noise-free.
+# Wheel odometry supplies forward, lateral and yaw velocity. The IMU gyro also
+# supplies yaw velocity. Both yaw rates are fused and weighted by the covariances
+# that covariance_stamper writes into the messages
+# (rescue_simulation/config/sensor_covariances.yaml): gyro 4.0e-6, wheels 5.0e-4,
+# so the gyro dominates and the wheels mainly hold back gyro bias when standing.
+# The Gazebo IMU orientation is not fused, because it has no noise model.
 #
 # Each *_config row is: x y z | roll pitch yaw | vx vy vz | vroll vpitch vyaw | ax ay az
 
@@ -23,7 +25,7 @@ ekf_filter_node:
     odom0_config: [false, false, false,
                    false, false, false,
                    true,  true,  false,
-                   false, false, false,
+                   false, false, true,
                    false, false, false]
     odom0_queue_size: 10
     odom0_differential: false

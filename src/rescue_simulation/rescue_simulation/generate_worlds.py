@@ -285,6 +285,196 @@ def _survivor_shapes(s):
     ]
 
 
+# ============================ occupancy grids ============================
+# Grid cell values follow the map_server convention for trinary maps.
+GRID_OCCUPIED, GRID_FREE, GRID_UNKNOWN = 0, 254, 205
+
+
+def _rotation(roll, pitch, yaw):
+    cr, sr, cp, sp = math.cos(roll), math.sin(roll), math.cos(pitch), math.sin(pitch)
+    cy, sy = math.cos(yaw), math.sin(yaw)
+    return ((cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr),
+            (sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr),
+            (-sp, cp * sr, cp * cr))
+
+
+def _box_corners(size, pose, parent):
+    """World-frame corners of a box. parent is the (x, y, yaw) of an enclosing model."""
+    rot = _rotation(*pose[3:6])
+    corners = []
+    for sx in (-0.5, 0.5):
+        for sy in (-0.5, 0.5):
+            for sz in (-0.5, 0.5):
+                lx, ly, lz = sx * size[0], sy * size[1], sz * size[2]
+                x = pose[0] + rot[0][0] * lx + rot[0][1] * ly + rot[0][2] * lz
+                y = pose[1] + rot[1][0] * lx + rot[1][1] * ly + rot[1][2] * lz
+                z = pose[2] + rot[2][0] * lx + rot[2][1] * ly + rot[2][2] * lz
+                if parent is not None:
+                    c, s = math.cos(parent[2]), math.sin(parent[2])
+                    x, y = parent[0] + c * x - s * y, parent[1] + s * x + c * y
+                corners.append((x, y, z))
+    return corners
+
+
+# Corner index pairs that form the 12 edges of a box built by _box_corners.
+_BOX_EDGES = [(a, b) for a in range(8) for b in range(a + 1, 8)
+              if bin(a ^ b).count('1') == 1]
+
+
+def _convex_hull(points):
+    pts = sorted(set((round(x, 6), round(y, 6)) for x, y in points))
+    if len(pts) < 3:
+        return pts
+
+    def half(seq):
+        hull = []
+        for p in seq:
+            while len(hull) >= 2 and ((hull[-1][0] - hull[-2][0]) * (p[1] - hull[-2][1])
+                                      - (hull[-1][1] - hull[-2][1]) * (p[0] - hull[-2][0])) <= 0:
+                hull.pop()
+            hull.append(p)
+        return hull[:-1]
+    return half(pts) + half(pts[::-1])
+
+
+def _shape_region(shape, parent, z_min, z_max):
+    """2D region a shape occupies between z_min and z_max, or None.
+
+    With z_min == z_max this is the exact cross-section at that height (what a
+    planar LiDAR sees). With a range it is the footprint of everything that
+    reaches into the range (what the robot body can hit). Returns
+    ('poly', [(x, y), ...]) counter-clockwise, or ('circle', x, y, r).
+    """
+    geom, pose = shape['geom'], shape['pose']
+    upright = abs(pose[3]) < 1e-9 and abs(pose[4]) < 1e-9
+    if geom == 'sphere' or (geom == 'cylinder' and upright):
+        cx, cy = pose[0], pose[1]
+        if parent is not None:
+            c, s = math.cos(parent[2]), math.sin(parent[2])
+            cx, cy = parent[0] + c * pose[0] - s * pose[1], parent[1] + s * pose[0] + c * pose[1]
+        radius = shape['size'][0]
+        half = radius if geom == 'sphere' else shape['size'][1] / 2
+        if pose[2] + half < z_min or pose[2] - half > z_max:
+            return None
+        if geom == 'sphere' and z_min == z_max:
+            radius = math.sqrt(max(0.0, radius ** 2 - (z_min - pose[2]) ** 2))
+        return ('circle', cx, cy, radius) if radius > 0 else None
+
+    # Boxes, and tilted cylinders approximated by their bounding box.
+    size = shape['size'] if geom == 'box' else (2 * shape['size'][0], 2 * shape['size'][0],
+                                                shape['size'][1])
+    corners = _box_corners(size, pose, parent)
+    zs = [c[2] for c in corners]
+    if max(zs) < z_min or min(zs) > z_max:
+        return None
+    if z_min == z_max:
+        points = []
+        for a, b in _BOX_EDGES:
+            za, zb = corners[a][2] - z_min, corners[b][2] - z_min
+            if za == 0:
+                points.append(corners[a][:2])
+            if zb == 0:
+                points.append(corners[b][:2])
+            if za * zb < 0:
+                t = za / (za - zb)
+                points.append((corners[a][0] + t * (corners[b][0] - corners[a][0]),
+                               corners[a][1] + t * (corners[b][1] - corners[a][1])))
+    else:
+        points = [c[:2] for c in corners]
+    hull = _convex_hull(points)
+    return ('poly', hull) if len(hull) >= 3 else None
+
+
+def occupancy_grid(builder, resolution, margin, z_min, z_max, include_survivors=True):
+    """Rasterize a world into a map_server-style grid.
+
+    Returns (grid, origin): grid is a uint8 numpy array with row 0 at the top
+    (largest y), origin is the world (x, y) of the lower-left corner. A cell is
+    occupied when its centre lies inside a shape, free when it is inside the
+    outer walls, unknown outside them.
+    """
+    import numpy as np
+
+    hx, hy = builder.cfg['size_x'] / 2, builder.cfg['size_y'] / 2
+    ox, oy = -hx - margin, -hy - margin
+    width = int(round((2 * hx + 2 * margin) / resolution))
+    height = int(round((2 * hy + 2 * margin) / resolution))
+    xs = ox + (np.arange(width) + 0.5) * resolution
+    ys = oy + (np.arange(height) + 0.5) * resolution
+    occupied = np.zeros((height, width), dtype=bool)
+
+    regions = [_shape_region(s, None, z_min, z_max) for s in builder.shapes]
+    if include_survivors:
+        for sv in builder.survivors:
+            parent = (sv['x'], sv['y'], sv['yaw'])
+            regions += [_shape_region(s, parent, z_min, z_max) for s in _survivor_shapes(sv)]
+    for region in regions:
+        if region is None:
+            continue
+        if region[0] == 'circle':
+            _, cx, cy, r = region
+            bx0, bx1, by0, by1 = cx - r, cx + r, cy - r, cy + r
+        else:
+            px, py = [p[0] for p in region[1]], [p[1] for p in region[1]]
+            bx0, bx1, by0, by1 = min(px), max(px), min(py), max(py)
+        c0 = max(0, int((bx0 - ox) / resolution))
+        c1 = min(width, int((bx1 - ox) / resolution) + 1)
+        r0 = max(0, int((by0 - oy) / resolution))
+        r1 = min(height, int((by1 - oy) / resolution) + 1)
+        if c0 >= c1 or r0 >= r1:
+            continue
+        gx, gy = np.meshgrid(xs[c0:c1], ys[r0:r1])
+        if region[0] == 'circle':
+            inside = (gx - cx) ** 2 + (gy - cy) ** 2 <= r ** 2
+        else:
+            inside = np.ones(gx.shape, dtype=bool)
+            poly = region[1]
+            for (x1, y1), (x2, y2) in zip(poly, poly[1:] + poly[:1]):
+                inside &= (x2 - x1) * (gy - y1) - (y2 - y1) * (gx - x1) >= -1e-9
+        occupied[r0:r1, c0:c1] |= inside
+
+    gx, gy = np.meshgrid(xs, ys)
+    grid = np.full((height, width), GRID_UNKNOWN, dtype=np.uint8)
+    grid[(np.abs(gx) < hx) & (np.abs(gy) < hy)] = GRID_FREE
+    grid[occupied] = GRID_OCCUPIED
+    return grid[::-1].copy(), (ox, oy)
+
+
+def write_png_gray(path, grid):
+    """Write an 8-bit greyscale PNG (no dependency on an imaging library)."""
+    import struct
+    import zlib
+
+    height, width = grid.shape
+    raw = b''.join(b'\x00' + grid[r].tobytes() for r in range(height))
+
+    def chunk(tag, data):
+        return (struct.pack('>I', len(data)) + tag + data
+                + struct.pack('>I', zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+    with open(path, 'wb') as f:
+        f.write(b'\x89PNG\r\n\x1a\n'
+                + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 0, 0, 0, 0))
+                + chunk(b'IDAT', zlib.compress(raw, 9))
+                + chunk(b'IEND', b''))
+
+
+def truth_map(builder, grid_cfg):
+    """Ground-truth occupancy at the LiDAR height. Returns (grid, map_server yaml dict)."""
+    z = float(grid_cfg['slice_z'])
+    grid, origin = occupancy_grid(builder, grid_cfg['resolution'], grid_cfg['margin_m'], z, z)
+    meta = {
+        'image': builder.name + '_truth_map.png',
+        'mode': 'trinary',
+        'resolution': float(grid_cfg['resolution']),
+        'origin': [_round(origin[0]), _round(origin[1]), 0.0],
+        'negate': 0,
+        'occupied_thresh': 0.65,
+        'free_thresh': 0.196,   # unknown is grey 205 = 0.196, which must not count as free
+    }
+    return grid, meta
+
+
 # ============================ layouts ============================
 
 def _place_survivor(b, rect, posture, occluded, extra_margin=0.2):
@@ -494,11 +684,22 @@ LAYOUTS = {'rooms': build_rooms, 'collapsed': build_collapsed, 'open_plan': buil
 
 # ============================ entry points ============================
 
-def generate(name, world_cfg, common, seed):
-    """Build one world. Returns (sdf_text, ground_truth_dict)."""
+def build(name, world_cfg, common, seed):
+    """Build one world and return its WorldBuilder (geometry, survivors, config)."""
     builder = WorldBuilder(name, world_cfg, common, seed)
     LAYOUTS[world_cfg['layout']](builder)
+    return builder
+
+
+def generate(name, world_cfg, common, seed):
+    """Build one world. Returns (sdf_text, ground_truth_dict)."""
+    builder = build(name, world_cfg, common, seed)
     return builder.to_sdf(), builder.to_truth()
+
+
+def load_config(path=None):
+    with open(path or default_config_path()) as f:
+        return yaml.safe_load(f)
 
 
 def default_config_path():
@@ -522,8 +723,7 @@ def main(argv=None):
                         help='generate only this world (repeatable)')
     args = parser.parse_args(argv)
 
-    with open(args.config or default_config_path()) as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_config(args.config)
     seed = cfg['seed'] if args.seed is None else args.seed
     names = args.world or list(cfg['worlds'])
     os.makedirs(args.output_dir, exist_ok=True)
@@ -533,7 +733,14 @@ def main(argv=None):
         world_cfg = dict(cfg['worlds'][name])
         if args.gap_width is not None and 'gap_width' in world_cfg:
             world_cfg['gap_width'] = args.gap_width
-        sdf, truth = generate(name, world_cfg, cfg['common'], seed)
+        builder = build(name, world_cfg, cfg['common'], seed)
+        sdf, truth = builder.to_sdf(), builder.to_truth()
+        grid, grid_meta = truth_map(builder, cfg['grid'])
+        write_png_gray(os.path.join(args.output_dir, grid_meta['image']), grid)
+        with open(os.path.join(args.output_dir, name + '_truth_map.yaml'), 'w') as f:
+            f.write('# Generated ground-truth occupancy grid in the world frame, cut at the'
+                    ' LiDAR height.\n')
+            yaml.safe_dump(grid_meta, f, sort_keys=False)
         with open(os.path.join(args.output_dir, name + '.sdf'), 'w') as f:
             f.write(sdf)
         with open(os.path.join(args.output_dir, name + '_survivors.yaml'), 'w') as f:

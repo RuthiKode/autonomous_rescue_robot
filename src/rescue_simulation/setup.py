@@ -25,6 +25,7 @@ setup(
         'console_scripts': [
             'generate_worlds = rescue_simulation.generate_worlds:main',
             'ground_truth_publisher = rescue_simulation.ground_truth_publisher:main',
+            'covariance_stamper = rescue_simulation.covariance_stamper:main',
         ],
     },
 )
