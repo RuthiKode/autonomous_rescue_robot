@@ -1,0 +1,33 @@
+# colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Rosbags and run artefacts (CSV result tables are kept)
+results/bags/
+*.mcap
+*.db3
+rosbag2_*/
+
+# Model weights and datasets
+*.pt
+*.onnx
+*.engine
+*.weights
+datasets/
+runs/
+
+# TF debug output from view_frames
+frames_*.pdf
+frames_*.gv
+
+# Editors
+.vscode/
+.idea/
+*.swp
