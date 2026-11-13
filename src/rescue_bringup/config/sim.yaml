@@ -1,0 +1,18 @@
+# Tunable values for sim.launch.py.
+
+robot:
+  name: rescue_robot
+  # Height above the generated spawn pose at which the robot is dropped.
+  spawn_z_offset: 0.02
+
+# Environment variables set for Gazebo. Under WSL2, Mesa falls back to software
+# rendering (llvmpipe) unless it is told to use the D3D12 driver; the adapter
+# name selects the NVIDIA GPU over an integrated one. Set an entry to "" to
+# leave that variable untouched (for example on native Linux).
+gz_environment:
+  GALLIUM_DRIVER: d3d12
+  MESA_D3D12_DEFAULT_ADAPTER_NAME: NVIDIA
+
+ground_truth:
+  publish_rate_hz: 1.0
+  topic: /ground_truth/survivors
