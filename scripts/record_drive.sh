@@ -33,5 +33,5 @@ sleep 2
 ros2 run rescue_eval auto_drive --world $WORLD
 STATUS=$?
 echo "true end pose: $(gz model -m rescue_robot -p 2>/dev/null | tail -2 | tr '\n' ' ')"
-kill -INT $REC; wait $REC
+pkill -TERM -f "rescue_eval/cmd_vel_record"; wait $REC
 exit $STATUS

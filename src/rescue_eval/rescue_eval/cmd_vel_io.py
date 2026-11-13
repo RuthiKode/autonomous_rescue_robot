@@ -17,11 +17,13 @@ a substitute for a controller.
 import argparse
 import csv
 import os
+import signal
 import sys
 
 from geometry_msgs.msg import Twist
 import rclpy
 from rclpy.executors import ExternalShutdownException
+from rclpy.signals import SignalHandlerOptions
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data, QoSProfile
 from rosgraph_msgs.msg import Clock
@@ -116,11 +118,17 @@ def record_main(argv=None):
     parser.add_argument('--output', required=True)
     parser.add_argument('--comment', default='')
     args, ros_args = parser.parse_known_args(argv)
-    rclpy.init(args=ros_args)
+    # Own signal handling: a recorder started in the background of a script has
+    # SIGINT ignored, so SIGTERM must also end the recording and save the file.
+    stop = []
+    rclpy.init(args=ros_args, signal_handler_options=SignalHandlerOptions.NO)
+    signal.signal(signal.SIGINT, lambda *_: stop.append(1))
+    signal.signal(signal.SIGTERM, lambda *_: stop.append(1))
     node = Recorder()
     print('Recording /cmd_vel. Drive the robot, then press Ctrl-C.', flush=True)
     try:
-        rclpy.spin(node)
+        while not stop and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     save_drive(args.output, node.rows, args.comment)
