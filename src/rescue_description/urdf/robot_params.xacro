@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<!--
+  Every tunable value of the rescue robot lives in this file:
+  dimensions, masses, sensor mounts, sensor rates, noise and friction.
+  Units: metres, kilograms, radians, seconds, hertz.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Chassis footprint (box) -->
+  <xacro:property name="chassis_length" value="0.40"/>
+  <xacro:property name="chassis_width" value="0.28"/>
+  <xacro:property name="chassis_height" value="0.12"/>
+  <xacro:property name="chassis_mass" value="6.0"/>
+  <xacro:property name="ground_clearance" value="0.04"/>
+  <!-- Chassis centre relative to the wheel axle, along x (negative = behind the axle) -->
+  <xacro:property name="chassis_offset_x" value="-0.06"/>
+
+  <!-- Drive wheels -->
+  <xacro:property name="wheel_radius" value="0.07"/>
+  <xacro:property name="wheel_width" value="0.04"/>
+  <xacro:property name="wheel_separation" value="0.34"/>
+  <xacro:property name="wheel_mass" value="0.4"/>
+  <!-- Low Coulomb friction so the wheels slip under acceleration and turning.
+       A rubber wheel on concrete is about 1.0. -->
+  <xacro:property name="wheel_mu" value="0.35"/>
+
+  <!-- Casters (frictionless spheres). The rear one carries load, the front one is an anti-tip stop. -->
+  <xacro:property name="caster_radius" value="0.025"/>
+  <xacro:property name="caster_mass" value="0.1"/>
+  <xacro:property name="caster_rear_x" value="-0.22"/>
+  <xacro:property name="caster_front_x" value="0.11"/>
+  <xacro:property name="caster_front_clearance" value="0.006"/>
+  <xacro:property name="caster_mu" value="0.0"/>
+
+  <!-- Drive limits used by the Gazebo diff-drive plugin -->
+  <xacro:property name="max_linear_velocity" value="0.6"/>
+  <xacro:property name="max_angular_velocity" value="2.0"/>
+  <xacro:property name="max_linear_acceleration" value="1.5"/>
+  <xacro:property name="max_angular_acceleration" value="4.0"/>
+  <xacro:property name="odom_rate" value="30"/>
+
+  <!-- Sensor mounts, relative to base_link (on the ground under the axle centre) -->
+  <xacro:property name="lidar_x" value="-0.04"/>
+  <xacro:property name="lidar_y" value="0.0"/>
+  <xacro:property name="lidar_z" value="0.20"/>
+  <xacro:property name="camera_x" value="0.13"/>
+  <xacro:property name="camera_y" value="0.0"/>
+  <xacro:property name="camera_z" value="0.27"/>
+  <xacro:property name="camera_pitch" value="0.0"/>
+  <xacro:property name="imu_x" value="-0.06"/>
+  <xacro:property name="imu_y" value="0.0"/>
+  <xacro:property name="imu_z" value="0.10"/>
+
+  <!-- 2D LiDAR -->
+  <xacro:property name="lidar_rate" value="10"/>
+  <xacro:property name="lidar_samples" value="360"/>
+  <xacro:property name="lidar_range_min" value="0.15"/>
+  <xacro:property name="lidar_range_max" value="12.0"/>
+  <xacro:property name="lidar_range_resolution" value="0.01"/>
+  <xacro:property name="lidar_noise_stddev" value="0.01"/>
+
+  <!-- RGB-D camera (a colour camera and a depth camera at the same pose) -->
+  <xacro:property name="camera_rate" value="15"/>
+  <xacro:property name="camera_width" value="640"/>
+  <xacro:property name="camera_height" value="480"/>
+  <xacro:property name="camera_hfov" value="1.2"/>
+  <xacro:property name="camera_clip_near" value="0.1"/>
+  <xacro:property name="camera_clip_far" value="10.0"/>
+  <xacro:property name="camera_rgb_noise_stddev" value="0.007"/>
+  <xacro:property name="camera_depth_noise_stddev" value="0.01"/>
+
+  <!-- IMU -->
+  <xacro:property name="imu_rate" value="50"/>
+  <xacro:property name="imu_gyro_noise_stddev" value="0.002"/>
+  <xacro:property name="imu_gyro_bias_mean" value="0.0005"/>
+  <xacro:property name="imu_gyro_bias_stddev" value="0.0001"/>
+  <xacro:property name="imu_accel_noise_stddev" value="0.02"/>
+  <xacro:property name="imu_accel_bias_mean" value="0.01"/>
+  <xacro:property name="imu_accel_bias_stddev" value="0.002"/>
+
+  <!-- Gazebo topic names (the ros_gz bridge maps these to the ROS topic contract) -->
+  <xacro:property name="gz_cmd_vel_topic" value="cmd_vel"/>
+  <xacro:property name="gz_odom_topic" value="odom_raw"/>
+  <!-- The plugin always publishes odom->base_link on a Gazebo topic. It is parked on this
+       name and never bridged to /tf, so the EKF can be the only odom->base_link publisher. -->
+  <xacro:property name="gz_odom_tf_topic" value="diff_drive/tf_unbridged"/>
+  <xacro:property name="gz_joint_states_topic" value="joint_states"/>
+  <xacro:property name="gz_scan_topic" value="scan"/>
+  <xacro:property name="gz_imu_topic" value="imu"/>
+  <xacro:property name="gz_camera_topic" value="camera/image"/>
+  <xacro:property name="gz_depth_topic" value="camera/depth_image"/>
+
+</robot>

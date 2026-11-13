@@ -1,0 +1,305 @@
+<?xml version="1.0"?>
+<!--
+  Differential-drive rescue robot. All numbers come from robot_params.xacro.
+
+  Frames:  base_link (on the ground under the axle centre)
+             -> chassis_link, left_wheel, right_wheel, caster_rear, caster_front
+             -> laser_link
+             -> camera_link -> camera_optical_link (z forward, used as the image frame_id)
+             -> imu_link
+-->
+<robot name="rescue_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="robot_params.xacro"/>
+
+  <xacro:property name="PI" value="3.141592653589793"/>
+
+  <!-- ===================== helpers ===================== -->
+  <xacro:macro name="box_inertial" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${mass*(y*y+z*z)/12}" ixy="0" ixz="0"
+               iyy="${mass*(x*x+z*z)/12}" iyz="0"
+               izz="${mass*(x*x+y*y)/12}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="sphere_inertial" params="mass r">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${0.4*mass*r*r}" ixy="0" ixz="0" iyy="${0.4*mass*r*r}" iyz="0" izz="${0.4*mass*r*r}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="gaussian_noise" params="stddev mean:=0.0">
+    <noise>
+      <type>gaussian</type>
+      <mean>${mean}</mean>
+      <stddev>${stddev}</stddev>
+    </noise>
+  </xacro:macro>
+
+  <xacro:macro name="imu_axis_noise" params="axis stddev bias_mean bias_stddev">
+    <xacro:element xacro:name="${axis}">
+      <noise type="gaussian">
+        <mean>0.0</mean>
+        <stddev>${stddev}</stddev>
+        <bias_mean>${bias_mean}</bias_mean>
+        <bias_stddev>${bias_stddev}</bias_stddev>
+      </noise>
+    </xacro:element>
+  </xacro:macro>
+
+  <material name="chassis_orange"><color rgba="0.9 0.45 0.1 1"/></material>
+  <material name="dark"><color rgba="0.12 0.12 0.12 1"/></material>
+  <material name="sensor_blue"><color rgba="0.1 0.3 0.8 1"/></material>
+
+  <!-- ===================== base and chassis ===================== -->
+  <link name="base_link"/>
+
+  <link name="chassis_link">
+    <visual>
+      <geometry><box size="${chassis_length} ${chassis_width} ${chassis_height}"/></geometry>
+      <material name="chassis_orange"/>
+    </visual>
+    <collision>
+      <geometry><box size="${chassis_length} ${chassis_width} ${chassis_height}"/></geometry>
+    </collision>
+    <xacro:box_inertial mass="${chassis_mass}" x="${chassis_length}" y="${chassis_width}" z="${chassis_height}"/>
+  </link>
+  <joint name="chassis_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="chassis_link"/>
+    <origin xyz="${chassis_offset_x} 0 ${ground_clearance + chassis_height/2}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ===================== drive wheels ===================== -->
+  <xacro:macro name="wheel" params="side reflect">
+    <link name="${side}_wheel">
+      <visual>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <material name="dark"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="${wheel_mass}"/>
+        <inertia ixx="${wheel_mass*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)/12}" ixy="0" ixz="0"
+                 iyy="${wheel_mass*wheel_radius*wheel_radius/2}" iyz="0"
+                 izz="${wheel_mass*(3*wheel_radius*wheel_radius + wheel_width*wheel_width)/12}"/>
+      </inertial>
+    </link>
+    <joint name="${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${side}_wheel"/>
+      <origin xyz="0 ${reflect*wheel_separation/2} ${wheel_radius}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+    <gazebo reference="${side}_wheel">
+      <mu1>${wheel_mu}</mu1>
+      <mu2>${wheel_mu}</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:wheel side="left" reflect="1"/>
+  <xacro:wheel side="right" reflect="-1"/>
+
+  <!-- ===================== casters ===================== -->
+  <xacro:macro name="caster" params="name x clearance">
+    <link name="caster_${name}">
+      <visual>
+        <geometry><sphere radius="${caster_radius}"/></geometry>
+        <material name="dark"/>
+      </visual>
+      <collision>
+        <geometry><sphere radius="${caster_radius}"/></geometry>
+      </collision>
+      <xacro:sphere_inertial mass="${caster_mass}" r="${caster_radius}"/>
+    </link>
+    <joint name="caster_${name}_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="caster_${name}"/>
+      <origin xyz="${x} 0 ${caster_radius + clearance}" rpy="0 0 0"/>
+    </joint>
+    <gazebo reference="caster_${name}">
+      <mu1>${caster_mu}</mu1>
+      <mu2>${caster_mu}</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:caster name="rear" x="${caster_rear_x}" clearance="0.0"/>
+  <xacro:caster name="front" x="${caster_front_x}" clearance="${caster_front_clearance}"/>
+
+  <!-- ===================== sensor links ===================== -->
+  <link name="laser_link">
+    <visual>
+      <geometry><cylinder radius="0.035" length="0.04"/></geometry>
+      <material name="sensor_blue"/>
+    </visual>
+  </link>
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="laser_link"/>
+    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="camera_link">
+    <visual>
+      <geometry><box size="0.03 0.09 0.03"/></geometry>
+      <material name="sensor_blue"/>
+    </visual>
+  </link>
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <origin xyz="${camera_x} ${camera_y} ${camera_z}" rpy="0 ${camera_pitch} 0"/>
+  </joint>
+
+  <!-- ROS optical convention: z forward, x right, y down -->
+  <link name="camera_optical_link"/>
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_optical_link"/>
+    <origin xyz="0 0 0" rpy="${-PI/2} 0 ${-PI/2}"/>
+  </joint>
+
+  <link name="imu_link"/>
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="${imu_x} ${imu_y} ${imu_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ===================== Gazebo: drive ===================== -->
+  <gazebo>
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>${wheel_separation}</wheel_separation>
+      <wheel_radius>${wheel_radius}</wheel_radius>
+      <topic>${gz_cmd_vel_topic}</topic>
+      <odom_topic>${gz_odom_topic}</odom_topic>
+      <tf_topic>${gz_odom_tf_topic}</tf_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
+      <odom_publish_frequency>${odom_rate}</odom_publish_frequency>
+      <max_linear_velocity>${max_linear_velocity}</max_linear_velocity>
+      <min_linear_velocity>${-max_linear_velocity}</min_linear_velocity>
+      <max_angular_velocity>${max_angular_velocity}</max_angular_velocity>
+      <min_angular_velocity>${-max_angular_velocity}</min_angular_velocity>
+      <max_linear_acceleration>${max_linear_acceleration}</max_linear_acceleration>
+      <min_linear_acceleration>${-max_linear_acceleration}</min_linear_acceleration>
+      <max_angular_acceleration>${max_angular_acceleration}</max_angular_acceleration>
+      <min_angular_acceleration>${-max_angular_acceleration}</min_angular_acceleration>
+    </plugin>
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>${gz_joint_states_topic}</topic>
+      <joint_name>left_wheel_joint</joint_name>
+      <joint_name>right_wheel_joint</joint_name>
+    </plugin>
+  </gazebo>
+
+  <!-- ===================== Gazebo: 2D LiDAR ===================== -->
+  <gazebo reference="laser_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <topic>${gz_scan_topic}</topic>
+      <gz_frame_id>laser_link</gz_frame_id>
+      <update_rate>${lidar_rate}</update_rate>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>${lidar_samples}</samples>
+            <resolution>1</resolution>
+            <min_angle>${-PI}</min_angle>
+            <max_angle>${PI - 2*PI/lidar_samples}</max_angle>
+          </horizontal>
+          <vertical>
+            <samples>1</samples>
+            <resolution>1</resolution>
+            <min_angle>0</min_angle>
+            <max_angle>0</max_angle>
+          </vertical>
+        </scan>
+        <range>
+          <min>${lidar_range_min}</min>
+          <max>${lidar_range_max}</max>
+          <resolution>${lidar_range_resolution}</resolution>
+        </range>
+        <xacro:gaussian_noise stddev="${lidar_noise_stddev}"/>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+  <!-- ===================== Gazebo: RGB-D camera ===================== -->
+  <!-- Two sensors at one pose: gz-sensors applies image noise to camera and
+       depth_camera sensors, which is what lets both streams be noisy. -->
+  <gazebo reference="camera_link">
+    <sensor name="rgb_camera" type="camera">
+      <topic>${gz_camera_topic}</topic>
+      <gz_frame_id>camera_optical_link</gz_frame_id>
+      <update_rate>${camera_rate}</update_rate>
+      <always_on>true</always_on>
+      <camera>
+        <horizontal_fov>${camera_hfov}</horizontal_fov>
+        <image>
+          <width>${camera_width}</width>
+          <height>${camera_height}</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>${camera_clip_near}</near>
+          <far>${camera_clip_far}</far>
+        </clip>
+        <xacro:gaussian_noise stddev="${camera_rgb_noise_stddev}"/>
+      </camera>
+    </sensor>
+    <sensor name="depth_camera" type="depth_camera">
+      <topic>${gz_depth_topic}</topic>
+      <gz_frame_id>camera_optical_link</gz_frame_id>
+      <update_rate>${camera_rate}</update_rate>
+      <always_on>true</always_on>
+      <camera>
+        <camera_info_topic>camera/depth_camera_info</camera_info_topic>
+        <horizontal_fov>${camera_hfov}</horizontal_fov>
+        <image>
+          <width>${camera_width}</width>
+          <height>${camera_height}</height>
+          <format>R_FLOAT32</format>
+        </image>
+        <clip>
+          <near>${camera_clip_near}</near>
+          <far>${camera_clip_far}</far>
+        </clip>
+        <xacro:gaussian_noise stddev="${camera_depth_noise_stddev}"/>
+      </camera>
+    </sensor>
+  </gazebo>
+
+  <!-- ===================== Gazebo: IMU ===================== -->
+  <gazebo reference="imu_link">
+    <sensor name="imu" type="imu">
+      <topic>${gz_imu_topic}</topic>
+      <gz_frame_id>imu_link</gz_frame_id>
+      <update_rate>${imu_rate}</update_rate>
+      <always_on>true</always_on>
+      <imu>
+        <angular_velocity>
+          <xacro:imu_axis_noise axis="x" stddev="${imu_gyro_noise_stddev}" bias_mean="${imu_gyro_bias_mean}" bias_stddev="${imu_gyro_bias_stddev}"/>
+          <xacro:imu_axis_noise axis="y" stddev="${imu_gyro_noise_stddev}" bias_mean="${imu_gyro_bias_mean}" bias_stddev="${imu_gyro_bias_stddev}"/>
+          <xacro:imu_axis_noise axis="z" stddev="${imu_gyro_noise_stddev}" bias_mean="${imu_gyro_bias_mean}" bias_stddev="${imu_gyro_bias_stddev}"/>
+        </angular_velocity>
+        <linear_acceleration>
+          <xacro:imu_axis_noise axis="x" stddev="${imu_accel_noise_stddev}" bias_mean="${imu_accel_bias_mean}" bias_stddev="${imu_accel_bias_stddev}"/>
+          <xacro:imu_axis_noise axis="y" stddev="${imu_accel_noise_stddev}" bias_mean="${imu_accel_bias_mean}" bias_stddev="${imu_accel_bias_stddev}"/>
+          <xacro:imu_axis_noise axis="z" stddev="${imu_accel_noise_stddev}" bias_mean="${imu_accel_bias_mean}" bias_stddev="${imu_accel_bias_stddev}"/>
+        </linear_acceleration>
+      </imu>
+    </sensor>
+  </gazebo>
+
+</robot>
