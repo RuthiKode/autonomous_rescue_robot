@@ -218,6 +218,24 @@ rooms_none_seed1_20261113T083554Z,2026-11-13T08:35:54+00:00,rooms,none,1,ok,,20.
 
 The CSV gained four columns (`drive`, `map_path`, `map_accuracy`, `ate_aligned_rmse_m`). The Phase 1 smoke-test file was moved to `results/phase1_runs.csv`; `run_eval` refuses to append to a file with a different header.
 
+### Loop closure, from the saved pose graphs
+
+```bash
+python3 scripts/loop_closure_check.py results/phase2_slip --method slam_replay_slip
+```
+
+slam_toolbox publishes its pose graph as one sphere per scan plus one list of edges. An edge between two scans whose ids differ by more than 20 links places that were visited far apart in time, which is what a loop closure produces. Results for the nine slip runs (graph from the last message of each bag; errors are SLAM against Gazebo truth, taken 5 s before and 5 s after the moment):
+
+| Run | Scans | Edges | Long-range edges | First long-range edge | Last increase | Error before -> after the last increase |
+| --- | --- | --- | --- | --- | --- | --- |
+| rooms, seeds 1-3 | 338 | 480-487 | 112-119 | 29-31 s | 219-221 s | 0.018->0.013, 0.033->0.024, 0.016->0.011 m |
+| collapsed, seeds 1-3 | 165 | 205-206 | 27 | 36-37 s | 101-102 s | 0.013->0.007, 0.014->0.005, 0.011->0.010 m |
+| open_plan, seeds 1-3 | 389-390 | 412 | 12 | 59-62 s | 228-231 s | 0.114->0.015, 0.155->0.018, 0.136->0.010 m |
+
+All nine runs hold long-range constraints. In open_plan the last one is added at 228-231 s, when the tour returns to its start, and the error falls from 0.11-0.16 m to 0.010-0.018 m around it; that is a loop closure at the end of the drive. In rooms and collapsed the error is already small (0.01-0.03 m) before the last constraint, so the effect is not visible in the numbers.
+
+What this does and does not show: the constraints exist and the big open_plan correction coincides with one. It does not show that every constraint is correct, and it replaces your RViz2 check only in part; I have not seen the map snap.
+
 ### 0f. RViz config
 
 `rescue_bringup/rviz/phase1.rviz` has RobotModel, TF, LaserScan (`/scan`), camera image (`/camera/image_raw`) and the ground-truth survivor markers (`/ground_truth/survivor_markers`, new). Fixed frame: `odom`.
@@ -397,7 +415,7 @@ Against the no-slip baseline above: strict IoU rooms 0.528 to 0.609, collapsed 0
 - **`evo` comes from pip**, the only dependency outside rosdep.
 - **Wheel collision is 0.005 m wide**; the visual is unchanged.
 - **`wheel_mu` is 0.12, not the Phase 1 value 0.35**, and the three drives were recorded again under that friction. The no-slip results stay in this report as the clean-floor reference.
-- **Loop closure is on but was not confirmed.** The plan's gate says a loop closure is visible in RViz2. That is your check; every drive returns to its start to give SLAM the chance.
+- **Loop closure is confirmed from the pose graph, not by eye.** The plan's gate says a loop closure is visible in RViz2. The graph check above shows long-range constraints in all nine runs and a 0.11-0.16 m correction in open_plan at the end of each tour. Seeing it in RViz2 is still your check.
 
 ## Known issues
 
