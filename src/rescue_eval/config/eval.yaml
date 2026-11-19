@@ -23,7 +23,8 @@ slam:
 
 # Runs with --nav-goals (Nav2 starts after the warm-up replay; goal settings: nav_goals.yaml)
 nav:
-  startup_timeout_s: 120.0  # wall seconds for bt_navigator to become active
+  startup_timeout_s: 60.0   # wall seconds per attempt for bt_navigator to become active
+  start_attempts: 3         # Nav2 is restarted this many times if its bring-up aborts
 
 # Topics written to the rosbag. Topics that do not exist yet are simply empty.
 # Camera images are left out on purpose: they dominate the bag size.

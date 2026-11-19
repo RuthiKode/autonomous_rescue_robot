@@ -222,10 +222,18 @@ def main(argv=None):
                 # Nav2 starts only now: running during the replay, its collision monitor
                 # and velocity smoother also publish on /cmd_vel and disturb the drive.
                 node.logging = False
-                nav = Process(['ros2', 'launch', 'rescue_navigation', 'navigation.launch.py'],
-                              log_path)
-                print('[run_eval] starting Nav2', flush=True)
-                if not _wait_nav_active(float(cfg['nav']['startup_timeout_s']), sim.alive):
+                # Nav2's lifecycle manager aborts the whole bring-up if one node's first
+                # transform lookup times out (seen once: base_link -> odom), so retry.
+                nav = None
+                for attempt in range(1, int(cfg['nav']['start_attempts']) + 1):
+                    nav = Process(['ros2', 'launch', 'rescue_navigation', 'navigation.launch.py'],
+                                  log_path)
+                    print(f'[run_eval] starting Nav2 (attempt {attempt})', flush=True)
+                    if _wait_nav_active(float(cfg['nav']['startup_timeout_s']), sim.alive):
+                        break
+                    nav.stop(float(cfg['shutdown_timeout_s']))
+                    nav = None
+                if nav is None:
                     status = 'nav_not_active'
                 else:
                     runner = NavGoalRunner(nav_cfg)
