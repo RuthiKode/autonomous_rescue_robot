@@ -23,6 +23,7 @@
   <exec_depend>rescue_description</exec_depend>
   <exec_depend>rescue_simulation</exec_depend>
   <exec_depend>rescue_slam</exec_depend>
+  <exec_depend>rescue_navigation</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
   <exec_depend>tf2_tools</exec_depend>
 
