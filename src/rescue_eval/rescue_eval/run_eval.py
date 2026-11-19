@@ -233,10 +233,13 @@ def main(argv=None):
         if map_yaml:
             truth_map = map_score.load_map(
                 os.path.join(sim_share, 'worlds', args.world + '_truth_map.yaml'))
-            s = map_score.score(truth_map, map_score.load_map(map_yaml), spawn)
+            s = map_score.score(truth_map, map_score.load_map(map_yaml), spawn,
+                                int(cfg['scoring']['map_tolerance_cells']))
             row['map_iou'] = f"{s['iou']:.4f}"
+            row['map_iou_tol'] = f"{s['iou_tol']:.4f}"
             row['map_accuracy'] = f"{s['accuracy']:.4f}"
-            print(f"[run_eval] map: IoU {s['iou']:.4f}, accuracy {s['accuracy']:.4f}"
+            print(f"[run_eval] map: IoU {s['iou']:.4f}, tolerance IoU {s['iou_tol']:.4f},"
+                  f" accuracy {s['accuracy']:.4f}"
                   f" over {s['known_cells']} cells known in both")
         log.save_tum(os.path.join(run_dir, 'trajectory_slam.tum'),
                      os.path.join(run_dir, 'trajectory_truth.tum'))

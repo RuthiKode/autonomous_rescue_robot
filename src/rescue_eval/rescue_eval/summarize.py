@@ -8,7 +8,7 @@ import math
 import statistics
 import sys
 
-METRICS = [('map_iou', 'IoU (occupied)'), ('map_accuracy', 'Accuracy'),
+METRICS = [('map_iou', 'IoU (occupied)'), ('map_iou_tol', 'IoU, 1-cell tolerance'), ('map_accuracy', 'Accuracy'),
            ('ate_rmse_m', 'ATE RMSE (m)'), ('ate_aligned_rmse_m', 'ATE RMSE, aligned (m)')]
 
 

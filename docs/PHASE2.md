@@ -2,7 +2,7 @@
 
 Run on 2026-11-13, same machine and stack as Phase 1 (Ubuntu 24.04 under WSL2, ROS 2 Jazzy, Gazebo Harmonic, RTX 4050 through Mesa D3D12).
 
-**Result:** every gate item has output below. Three results look bad and are reported as such: map IoU is below the plan's 0.8 starting target in every world (0.53-0.62 against 0.8), with the original friction the EKF was slightly worse than raw wheel odometry (fixed by adding wheel slip, see 0d-2), and a blocked robot with spinning wheels drags both the EKF and SLAM away from the truth.
+**Result:** every gate item has output below. Three results look bad and are reported as such: strict map IoU is below the plan's 0.8 starting target in every world (0.53-0.62; with a 1-cell tolerance 0.79-0.93), with the original friction the EKF was slightly worse than raw wheel odometry (fixed by adding wheel slip, see 0d-2), and a blocked robot with spinning wheels drags both the EKF and SLAM away from the truth.
 
 Nothing here was checked by eye. RViz2 loads both configs without crashing; whether they look right is yours to judge.
 
@@ -323,9 +323,10 @@ ros2 run rescue_eval map_score --truth src/rescue_simulation/worlds/rooms_truth_
 
 **Alignment.** Nothing is fitted. slam_toolbox's map frame starts at the robot's start pose, and the robot's spawn pose in the world is known from the ground-truth YAML, so `p_world = R(spawn_yaw) * p_map + (spawn_x, spawn_y)`. The generator spawns the robot at the world origin facing +x, so today this is the identity; the code does not assume it. Each truth cell centre is mapped into the SLAM map and takes the value of the cell it lands in. Map drift lowers the score; no best-fit hides it.
 
-**Scores**, both over cells that are free or occupied in both maps:
+**Scores**, all over cells that are free or occupied in both maps:
 
-- IoU = cells occupied in both / cells occupied in either.
+- IoU = cells occupied in both / cells occupied in either (strict, 5 cm).
+- Tolerance IoU (`map_iou_tol`) = the same, but a cell matches if the other map has an occupied cell within 1 cell (Chebyshev: the 3x3 neighbourhood, 5 cm straight, 7 cm diagonal). With matched truth cells TP_t = |T and dilate(S)| and matched SLAM cells TP_s = |S and dilate(T)|: TP = (TP_t + TP_s) / 2 and the score is TP / (|T| + |S| - TP). It forgives a wall that is one cell thicker or shifted by one cell; it does not forgive a missing or invented wall (unit-tested both ways). The tolerance is `scoring.map_tolerance_cells` in `eval.yaml`.
 - Accuracy = share of those cells where the two maps agree.
 
 Saved maps mark unknown as grey 205 with `free_thresh` 0.25, which a plain threshold reads as free. The loader treats 205 as unknown.
@@ -345,7 +346,7 @@ evo_ape tum results/phase2/runs/<run_id>/trajectory_truth.tum results/phase2/run
 
 ### 3d. In the CSV
 
-`map_iou`, `map_accuracy`, `ate_rmse_m` and `ate_aligned_rmse_m` are filled for `--slam` runs. The other ten plan metrics stay `nan`.
+`map_iou`, `map_iou_tol`, `map_accuracy`, `ate_rmse_m` and `ate_aligned_rmse_m` are filled for `--slam` runs. The other ten plan metrics stay `nan`. `ros2 run rescue_eval rescore --csv <runs.csv>` adds the current metrics to an older results file from its saved maps (the old file is kept as `.before_rescore`); the baseline CSVs here were rescored that way, and strict IoU, accuracy and trajectory values did not change.
 
 ## Step 4: Baseline
 
@@ -356,17 +357,17 @@ ros2 run rescue_eval summarize --csv results/phase2/runs.csv --method slam_repla
 
 Three runs per world, Gazebo seeds 1-3, each replaying that world's drive. Mean +/- standard deviation (sample, n = 3):
 
-| World | Runs | IoU (occupied) | Accuracy | ATE RMSE (m) | ATE RMSE, aligned (m) |
-| --- | --- | --- | --- | --- | --- |
-| rooms | 3 | 0.5275 +/- 0.0504 | 0.9555 +/- 0.0063 | 0.0471 +/- 0.0048 | 0.0245 +/- 0.0029 |
-| collapsed | 3 | 0.6167 +/- 0.0482 | 0.9776 +/- 0.0034 | 0.0446 +/- 0.0052 | 0.0149 +/- 0.0021 |
-| open_plan | 3 | 0.5648 +/- 0.0203 | 0.9792 +/- 0.0015 | 0.1877 +/- 0.0377 | 0.1047 +/- 0.0169 |
+| World | Runs | IoU (occupied) | IoU, 1-cell tolerance | Accuracy | ATE RMSE (m) | ATE RMSE, aligned (m) |
+| --- | --- | --- | --- | --- | --- | --- |
+| rooms | 3 | 0.5275 +/- 0.0504 | 0.7967 +/- 0.0580 | 0.9555 +/- 0.0063 | 0.0471 +/- 0.0048 | 0.0245 +/- 0.0029 |
+| collapsed | 3 | 0.6167 +/- 0.0482 | 0.8739 +/- 0.0677 | 0.9776 +/- 0.0034 | 0.0446 +/- 0.0052 | 0.0149 +/- 0.0021 |
+| open_plan | 3 | 0.5648 +/- 0.0203 | 0.8436 +/- 0.0415 | 0.9792 +/- 0.0015 | 0.1877 +/- 0.0377 | 0.1047 +/- 0.0169 |
 
 Per-run values are in `results/phase2/runs.csv`. The table is regenerated with `summarize` above.
 
 Reading the table:
 
-- **The plan's starting target (IoU above 0.8 in the simplest world) is not met.** Best mean IoU is 0.62 (collapsed). Accuracy over cells known in both is 0.96-0.98.
+- **The plan's starting target (IoU above 0.8 in the simplest world) is not met by the strict IoU** (best mean 0.62, collapsed). With a 1-cell tolerance, rooms is 0.80 (no slip) and 0.86 (slip) and collapsed 0.87 and 0.93; open_plan is 0.84 and 0.79. Accuracy over cells known in both is 0.96-0.98.
 - **Collapsed IoU covers the start zone only.** The scored cells are those known in both maps, and the tour never leaves that zone.
 - **Trajectory error is small except in open_plan.** Rooms and collapsed: about 0.045 m RMSE. Open_plan: 0.19 m (0.10 m after rigid alignment), on the longest drive (92.1 m).
 - **Open_plan error comes and goes.** In all three runs the error between SLAM and truth rises to 0.25-0.36 m at three quarters of the drive (peak 0.37-0.54 m) and is back to 0.004-0.013 m at the end, when the robot returns to its start. That pattern is what a loop closure produces. I did not confirm it in the pose graph; the bags are there for you to check in RViz2.
@@ -377,13 +378,13 @@ Reading the table:
 
 Same protocol, drives re-recorded at 0.12, method `slam_replay_slip` (`results/phase2_slip/`, a separate CSV). Mean +/- standard deviation, n = 3:
 
-| World | IoU (occupied) | Accuracy | ATE RMSE (m) | ATE RMSE, aligned (m) |
-| --- | --- | --- | --- | --- |
-| rooms | 0.6093 +/- 0.0310 | 0.9653 +/- 0.0034 | 0.0445 +/- 0.0121 | 0.0207 +/- 0.0021 |
-| collapsed | 0.6680 +/- 0.0069 | 0.9813 +/- 0.0008 | 0.0290 +/- 0.0053 | 0.0167 +/- 0.0011 |
-| open_plan | 0.5378 +/- 0.0348 | 0.9771 +/- 0.0026 | 0.1824 +/- 0.0239 | 0.1074 +/- 0.0071 |
+| World | IoU (occupied) | IoU, 1-cell tolerance | Accuracy | ATE RMSE (m) | ATE RMSE, aligned (m) |
+| --- | --- | --- | --- | --- | --- |
+| rooms | 0.6093 +/- 0.0310 | 0.8589 +/- 0.0578 | 0.9653 +/- 0.0034 | 0.0445 +/- 0.0121 | 0.0207 +/- 0.0021 |
+| collapsed | 0.6680 +/- 0.0069 | 0.9266 +/- 0.0080 | 0.9813 +/- 0.0008 | 0.0290 +/- 0.0053 | 0.0167 +/- 0.0011 |
+| open_plan | 0.5378 +/- 0.0348 | 0.7888 +/- 0.0355 | 0.9771 +/- 0.0026 | 0.1824 +/- 0.0239 | 0.1074 +/- 0.0071 |
 
-Against the no-slip baseline above: rooms IoU 0.528 to 0.609, collapsed 0.617 to 0.668, open_plan 0.565 to 0.538; ATE is similar or lower. **Do not read this as "slip helps mapping".** The two baselines use different drive files (the slip tours were planned again and recorded under slip), and with three runs each, differences of 0.05 in IoU are within the spread of the rooms world (sd 0.03-0.05). What the table does show is that SLAM still works with realistic slip: the map quality did not collapse, and the target of IoU 0.8 is still not reached.
+Against the no-slip baseline above: strict IoU rooms 0.528 to 0.609, collapsed 0.617 to 0.668, open_plan 0.565 to 0.538; tolerance IoU rooms 0.797 to 0.859, collapsed 0.874 to 0.927, open_plan 0.844 to 0.789; ATE is similar or lower. **Do not read this as "slip helps mapping".** The two baselines use different drive files (the slip tours were planned again and recorded under slip), and with three runs each, differences of 0.05 in IoU are within the spread of the rooms world (sd 0.03-0.05). What the table does show is that SLAM still works with realistic slip: the map quality did not collapse, and the strict IoU is still below 0.8 (tolerance IoU: 0.79-0.93).
 
 ## Deviations from the plan and from the Phase 2 instructions
 
@@ -400,15 +401,15 @@ Against the no-slip baseline above: rooms IoU 0.528 to 0.609, collapsed 0.617 to
 
 ## Known issues
 
-- **Map IoU is below the plan's 0.8 target.** Accuracy is 0.94-0.98, so the maps agree on almost every cell; the occupied-cell IoU is strict at 5 cm. Measured with  on the nine slip runs: SLAM has 1.2-1.5 times as many occupied cells as the truth, and the extra cells lie a median of 1 cell (5 cm) from a true wall. Allowing a 1-cell tolerance lifts IoU from 0.51-0.68 to 0.72-0.91, and a 2-cell tolerance to 0.79-0.95:
+- **Strict map IoU is below the plan's 0.8 target; tolerance IoU mostly is not.** Strict IoU at 5 cm is 0.51-0.68; accuracy is 0.96-0.98. `scripts/iou_diagnostic.py` on the nine slip runs shows SLAM has 1.2-1.5 times as many occupied cells as the truth, and the extra cells lie a median of 1 cell (5 cm) from a true wall: the walls are in the right place but one or two cells thick. With a 1-cell tolerance IoU is 0.76-0.94 and with 2 cells 0.83-0.96 (per run):
 
 | World | Strict IoU | 1-cell tolerance | 2-cell tolerance | SLAM / truth occupied cells |
 | --- | --- | --- | --- | --- |
-| rooms (3 runs) | 0.58-0.64 | 0.77-0.88 | 0.83-0.93 | 1.17-1.24 |
-| collapsed (3 runs) | 0.66-0.68 | 0.89-0.91 | 0.94-0.95 | 1.43-1.44 |
-| open_plan (3 runs) | 0.51-0.58 | 0.72-0.78 | 0.79-0.85 | 1.40-1.49 |
+| rooms (3 runs) | 0.58-0.64 | 0.80-0.91 | 0.86-0.94 | 1.17-1.24 |
+| collapsed (3 runs) | 0.66-0.68 | 0.92-0.94 | 0.95-0.96 | 1.43-1.44 |
+| open_plan (3 runs) | 0.51-0.58 | 0.76-0.83 | 0.83-0.89 | 1.40-1.49 |
 
-So the maps are in the right place and the wall cells are thicker or offset by one or two cells; that is a measurement-resolution effect more than a mapping failure. The tolerance IoU is my own ad hoc diagnostic (not a plan metric), and I did not tune slam_toolbox. Part of the thickness may come from how the truth grid is cut (single height, centre-in-shape rule) and part from scan noise; I did not separate those.
+  I did not tune slam_toolbox, and I did not separate how much of the thickness comes from scan noise and how much from the way the truth grid is cut (single height, centre-in-shape rule).
 - **A blocked robot corrupts the estimate.** In three open_plan runs made with a faulty drive file (kept in the CSV under method `slam_replay_truncated_drive`; IoU 0.22-0.28, ATE 0.50-0.71 m), the robot drove into a crate 12 s in and sat there with its wheels spinning. Raw odometry advanced 2 m while the robot stood still, the EKF followed it, and SLAM was pulled 0.3 m at once and 1.4 m by the end (ATE 0.50-0.71 m). The gyro kept EKF yaw right (0.16 against raw 0.43 at that moment), which is the one case here where the EKF clearly beat raw odometry. Stuck detection belongs to the mission tree later.
 - **That faulty drive was my recording script's fault, and fixing it took two attempts.** The recorder had not subscribed when the tour started, so the opening turn was missing and the replayed robot ended up facing a crate. The first fix (wait for the subscription) was not enough: the simulator bridge could connect before the recorder, and the robot moved on commands the recording never got. `auto_drive` now waits for two `/cmd_vel` subscribers (bridge and recorder) and stands still for 1 s before the first command; the recording starts with that turn (`0.999,0.0000,1.0000`). The faulty file is kept at `results/phase2/open_plan_truncated_drive.csv`.
 - **The rooms and collapsed drives were recorded before that fix.** Their first rows are present (`0.000,0.0000,1.0000` and `0.000,0.0000,-1.0000`) and their replays end where the tour ended (rooms and collapsed spread table above), so they are not affected; they have not been re-recorded with the final script.
@@ -424,5 +425,5 @@ So the maps are in the right place and the wall cells are thicker or offset by o
 ## Decisions for you
 
 1. **Wheel slip: settled in 0d-2 at `wheel_mu` 0.12.** Say if you want less or more slip (0.08 is the severe end).
-2. **IoU target.** The diagnostic above says a 1-cell tolerance already gives 0.72-0.91. Keep the strict 5 cm IoU and tune slam_toolbox toward 0.8, or report a 1-cell tolerance IoU alongside it?
+2. **IoU target: settled.** The tolerance IoU (1 cell) is now a recorded metric next to the strict one. Whether the plan's 0.8 applies to it, and whether slam_toolbox should still be tuned, is the remaining call.
 3. **Your own drives.** The baseline should eventually use drives you recorded, including one through the collapsed world's gaps.

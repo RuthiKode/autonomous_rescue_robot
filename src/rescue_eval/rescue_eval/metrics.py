@@ -11,9 +11,9 @@ RUN_COLUMNS = [
 
 # Metrics defined in docs/PLAN.md. Each one is filled in by the stage that makes
 # it measurable; until then it is written as "nan", never as a made-up number.
-# Measured from Phase 2: map_iou, map_accuracy, ate_rmse_m, ate_aligned_rmse_m.
+# Measured from Phase 2: map_iou, map_iou_tol, map_accuracy, ate_rmse_m, ate_aligned_rmse_m.
 METRIC_COLUMNS = [
-    'nav_success_rate', 'map_iou', 'map_accuracy', 'ate_rmse_m', 'ate_aligned_rmse_m',
+    'nav_success_rate', 'map_iou', 'map_iou_tol', 'map_accuracy', 'ate_rmse_m', 'ate_aligned_rmse_m',
     'coverage', 'time_to_90_coverage_s',
     'det_precision', 'det_recall', 'duplicate_rate', 'pin_error_m',
     'mission_completed', 'mission_time_s', 'recoveries',

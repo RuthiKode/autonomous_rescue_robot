@@ -2,9 +2,7 @@
 
   python3 scripts/iou_diagnostic.py results/phase2_slip
 
-Tolerance IoU: a cell matches if the other map has an occupied cell within k cells;
-the score is the mean of the two matched fractions over the union. An ad hoc
-diagnostic, not a plan metric.
+Tolerance IoU is rescue_eval.map_score.tolerance_iou (the map_iou_tol metric for k = 1).
 """
 import csv
 import glob
@@ -33,13 +31,7 @@ for r in rows:
     iou = (to & so).sum() / (to | so).sum()
 
     def tol(k):
-        # a cell counts as matched if the other map has an occupied cell within k cells
-        st = ndimage.binary_dilation(so, iterations=k)
-        tt = ndimage.binary_dilation(to, iterations=k)
-        tp_t = (to & st).sum()       # truth cells explained by slam
-        tp_s = (so & tt).sum()       # slam cells explained by truth
-        union = to.sum() + so.sum() - (tp_t + tp_s) / 2
-        return ((tp_t + tp_s) / 2) / union
+        return ms.tolerance_iou(to, so, k)
     dist_to_truth = ndimage.distance_transform_edt(~to)
     only_slam = so & ~to
     only_truth = to & ~so

@@ -8,6 +8,10 @@ shutdown_timeout_s: 20.0    # wall seconds between SIGINT and SIGKILL
 output_dir: results         # relative to the current directory unless absolute
 csv_name: runs.csv
 
+# Map scoring
+scoring:
+  map_tolerance_cells: 1   # tolerance of map_iou_tol, in cells (0.05 m each)
+
 # Runs with --slam
 slam:
   ready_timeout_s: 60.0     # wall seconds to wait for map -> base_link before driving

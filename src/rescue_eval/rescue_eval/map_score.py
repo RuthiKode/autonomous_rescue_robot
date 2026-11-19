@@ -18,6 +18,7 @@ being hidden by a best-fit alignment.
 
 Scores, both over cells that are known (free or occupied) in both maps:
   IoU       |truth occupied AND slam occupied| / |truth occupied OR slam occupied|
+  IoU_tol   the same with a tolerance of k cells (see tolerance_iou); k = 1 by default
   accuracy  share of those cells where the two maps agree
 """
 import argparse
@@ -76,8 +77,33 @@ def resample_to_truth(truth, slam, spawn):
     return out
 
 
-def score(truth, slam, spawn=(0.0, 0.0, 0.0)):
-    """Return dict(iou, accuracy, known_cells, truth_occupied, slam_occupied)."""
+def tolerance_iou(t_occ, s_occ, tolerance_cells):
+    """IoU in which a cell matches if the other map has an occupied cell within tolerance.
+
+    "Within k cells" means Chebyshev distance: the 3x3 neighbourhood for k = 1, which at
+    0.05 m is 5 cm straight and 7 cm diagonally. With matched truth cells
+    TP_t = |T and dilate(S)| and matched SLAM cells TP_s = |S and dilate(T)|, the score is
+
+        TP / (|T| + |S| - TP)   with   TP = (TP_t + TP_s) / 2
+
+    For k = 0 this is the plain IoU. It rewards a wall in the right place and forgives
+    a wall that is one or two cells thick or shifted by up to k cells; it does not
+    forgive missing or invented walls.
+    """
+    if tolerance_cells <= 0:
+        union = np.count_nonzero(t_occ | s_occ)
+        return float(np.count_nonzero(t_occ & s_occ) / union) if union else float('nan')
+    from scipy import ndimage
+    box = np.ones((3, 3), dtype=bool)
+    s_near = ndimage.binary_dilation(s_occ, structure=box, iterations=tolerance_cells)
+    t_near = ndimage.binary_dilation(t_occ, structure=box, iterations=tolerance_cells)
+    tp = (np.count_nonzero(t_occ & s_near) + np.count_nonzero(s_occ & t_near)) / 2
+    union = np.count_nonzero(t_occ) + np.count_nonzero(s_occ) - tp
+    return float(tp / union) if union else float('nan')
+
+
+def score(truth, slam, spawn=(0.0, 0.0, 0.0), tolerance_cells=1):
+    """Return dict(iou, iou_tol, accuracy, known_cells, truth_occupied, slam_occupied)."""
     t = truth['cells']
     s = resample_to_truth(truth, slam, spawn)
     known = (t != UNKNOWN) & (s != UNKNOWN)
@@ -86,6 +112,7 @@ def score(truth, slam, spawn=(0.0, 0.0, 0.0)):
     n_known = int(np.count_nonzero(known))
     return {
         'iou': float(np.count_nonzero(t_occ & s_occ) / union) if union else float('nan'),
+        'iou_tol': tolerance_iou(t_occ, s_occ, tolerance_cells),
         'accuracy': float(np.count_nonzero((t == s) & known) / n_known) if n_known
         else float('nan'),
         'known_cells': n_known,
@@ -98,10 +125,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--truth', required=True, help='<world>_truth_map.yaml')
     parser.add_argument('--map', required=True, help='SLAM map yaml written by map_saver_cli')
+    parser.add_argument('--tolerance-cells', type=int, default=1,
+                        help='tolerance of iou_tol, in cells (0.05 m each)')
     parser.add_argument('--spawn', type=float, nargs=3, default=[0.0, 0.0, 0.0],
                         metavar=('X', 'Y', 'YAW'), help='robot start pose in the world frame')
     args = parser.parse_args(argv)
-    result = score(load_map(args.truth), load_map(args.map), tuple(args.spawn))
+    result = score(load_map(args.truth), load_map(args.map), tuple(args.spawn),
+                   args.tolerance_cells)
     for key, value in result.items():
         print(f'{key}: {value:.4f}' if isinstance(value, float) else f'{key}: {value}')
     return 0

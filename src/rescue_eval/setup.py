@@ -34,6 +34,7 @@ setup(
             'tf_audit = rescue_eval.tf_audit:main',
             'map_score = rescue_eval.map_score:main',
             'summarize = rescue_eval.summarize:main',
+            'rescore = rescue_eval.rescore:main',
         ],
     },
 )

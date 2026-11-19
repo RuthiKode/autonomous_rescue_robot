@@ -99,6 +99,36 @@ def test_spawn_pose_moves_the_map_frame(tmp_path):
     assert map_score.score(truth, slam, spawn=(0.0, 0.0, 0.0))['iou'] < 1.0
 
 
+def test_tolerance_iou_forgives_a_one_cell_shift_but_not_three(tmp_path):
+    truth = _write_map(tmp_path, 'truth', _room(), (-1.0, -1.0))
+    one = _write_map(tmp_path, 'one', _room(shift_cols=1), (-1.0, -1.0))
+    three = _write_map(tmp_path, 'three', _room(shift_cols=3), (-1.0, -1.0))
+    s1, s3 = map_score.score(truth, one), map_score.score(truth, three)
+    assert s1['iou'] == 0.0 and s1['iou_tol'] == 1.0
+    assert s3['iou'] == 0.0 and s3['iou_tol'] == 0.0
+
+
+def test_tolerance_iou_forgives_a_thick_wall_but_not_a_missing_one(tmp_path):
+    truth = _write_map(tmp_path, 'truth', _room(), (-1.0, -1.0))
+    thick = _room()
+    thick[10:30, 21] = map_score.OCCUPIED          # wall two cells thick
+    missing = _room()
+    missing[:, 20] = map_score.FREE                # wall gone
+    st = map_score.score(truth, _write_map(tmp_path, 'thick', thick, (-1.0, -1.0)))
+    sm = map_score.score(truth, _write_map(tmp_path, 'missing', missing, (-1.0, -1.0)))
+    assert st['iou'] == 0.5 and st['iou_tol'] == 1.0
+    assert sm['iou_tol'] == 0.0
+
+
+def test_tolerance_zero_is_plain_iou(tmp_path):
+    truth = _write_map(tmp_path, 'truth', _room(), (-1.0, -1.0))
+    thick = _room()
+    thick[10:30, 21] = map_score.OCCUPIED
+    s = map_score.score(truth, _write_map(tmp_path, 'thick', thick, (-1.0, -1.0)),
+                        tolerance_cells=0)
+    assert s['iou_tol'] == s['iou'] == 0.5
+
+
 # ---------------- trajectory ----------------
 def test_ate_of_a_constant_offset():
     pytest.importorskip('evo')
