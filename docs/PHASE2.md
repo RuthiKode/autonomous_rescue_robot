@@ -400,7 +400,15 @@ Against the no-slip baseline above: rooms IoU 0.528 to 0.609, collapsed 0.617 to
 
 ## Known issues
 
-- **Map IoU is below the plan's 0.8 target.** Accuracy is 0.94-0.98, so the maps agree on almost every cell; the occupied-cell IoU is strict at 5 cm. Likely contributors, not separated by measurement: SLAM draws walls one cell thick with a few centimetres of offset against 3-cell truth walls, and scan noise thickens them. I did not tune slam_toolbox.
+- **Map IoU is below the plan's 0.8 target.** Accuracy is 0.94-0.98, so the maps agree on almost every cell; the occupied-cell IoU is strict at 5 cm. Measured with  on the nine slip runs: SLAM has 1.2-1.5 times as many occupied cells as the truth, and the extra cells lie a median of 1 cell (5 cm) from a true wall. Allowing a 1-cell tolerance lifts IoU from 0.51-0.68 to 0.72-0.91, and a 2-cell tolerance to 0.79-0.95:
+
+| World | Strict IoU | 1-cell tolerance | 2-cell tolerance | SLAM / truth occupied cells |
+| --- | --- | --- | --- | --- |
+| rooms (3 runs) | 0.58-0.64 | 0.77-0.88 | 0.83-0.93 | 1.17-1.24 |
+| collapsed (3 runs) | 0.66-0.68 | 0.89-0.91 | 0.94-0.95 | 1.43-1.44 |
+| open_plan (3 runs) | 0.51-0.58 | 0.72-0.78 | 0.79-0.85 | 1.40-1.49 |
+
+So the maps are in the right place and the wall cells are thicker or offset by one or two cells; that is a measurement-resolution effect more than a mapping failure. The tolerance IoU is my own ad hoc diagnostic (not a plan metric), and I did not tune slam_toolbox. Part of the thickness may come from how the truth grid is cut (single height, centre-in-shape rule) and part from scan noise; I did not separate those.
 - **A blocked robot corrupts the estimate.** In three open_plan runs made with a faulty drive file (kept in the CSV under method `slam_replay_truncated_drive`; IoU 0.22-0.28, ATE 0.50-0.71 m), the robot drove into a crate 12 s in and sat there with its wheels spinning. Raw odometry advanced 2 m while the robot stood still, the EKF followed it, and SLAM was pulled 0.3 m at once and 1.4 m by the end (ATE 0.50-0.71 m). The gyro kept EKF yaw right (0.16 against raw 0.43 at that moment), which is the one case here where the EKF clearly beat raw odometry. Stuck detection belongs to the mission tree later.
 - **That faulty drive was my recording script's fault, and fixing it took two attempts.** The recorder had not subscribed when the tour started, so the opening turn was missing and the replayed robot ended up facing a crate. The first fix (wait for the subscription) was not enough: the simulator bridge could connect before the recorder, and the robot moved on commands the recording never got. `auto_drive` now waits for two `/cmd_vel` subscribers (bridge and recorder) and stands still for 1 s before the first command; the recording starts with that turn (`0.999,0.0000,1.0000`). The faulty file is kept at `results/phase2/open_plan_truncated_drive.csv`.
 - **The rooms and collapsed drives were recorded before that fix.** Their first rows are present (`0.000,0.0000,1.0000` and `0.000,0.0000,-1.0000`) and their replays end where the tour ended (rooms and collapsed spread table above), so they are not affected; they have not been re-recorded with the final script.
@@ -416,5 +424,5 @@ Against the no-slip baseline above: rooms IoU 0.528 to 0.609, collapsed 0.617 to
 ## Decisions for you
 
 1. **Wheel slip: settled in 0d-2 at `wheel_mu` 0.12.** Say if you want less or more slip (0.08 is the severe end).
-2. **IoU target.** Keep the strict 5 cm IoU and tune slam_toolbox toward 0.8, or add a tolerance of one cell to the metric?
+2. **IoU target.** The diagnostic above says a 1-cell tolerance already gives 0.72-0.91. Keep the strict 5 cm IoU and tune slam_toolbox toward 0.8, or report a 1-cell tolerance IoU alongside it?
 3. **Your own drives.** The baseline should eventually use drives you recorded, including one through the collapsed world's gaps.
