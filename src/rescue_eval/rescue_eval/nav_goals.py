@@ -217,14 +217,20 @@ class NavGoalRunner(Node):
         return row
 
     # ------------------------------------------------------------ whole run
-    def run(self, planner, seed, count=None, alive=lambda: True, log=print):
-        """Sample goals from the live map and run them all. Returns the list of rows."""
-        rng = np.random.default_rng(seed)
-        goals = sample_goals(planner, self.live_free_test(),
-                             count or int(self.cfg['count']), rng, self.true_xy(),
-                             float(self.cfg['min_goal_distance_m']),
-                             float(self.cfg['min_goal_separation_m']))
-        log(f'[nav_goals] {len(goals)} goals sampled (seed {seed})')
+    def run(self, planner, seed, count=None, alive=lambda: True, log=print, goals=None):
+        """Sample goals from the live map (or use the given ones) and run them all.
+
+        goals: optional list of (x, y, yaw) to run instead of sampling. Returns the rows.
+        """
+        if goals is None:
+            rng = np.random.default_rng(seed)
+            goals = sample_goals(planner, self.live_free_test(),
+                                 count or int(self.cfg['count']), rng, self.true_xy(),
+                                 float(self.cfg['min_goal_distance_m']),
+                                 float(self.cfg['min_goal_separation_m']))
+            log(f'[nav_goals] {len(goals)} goals sampled (seed {seed})')
+        else:
+            log(f'[nav_goals] {len(goals)} explicit goals')
         rows = []
         for i, goal in enumerate(goals, 1):
             row = self.run_goal(goal, alive)
@@ -276,12 +282,24 @@ def main(argv=None):
     parser.add_argument('--seed', type=int, default=1, help='seed of the goal sampler')
     parser.add_argument('--count', type=int, default=None)
     parser.add_argument('--output', default='results/nav_goals.csv')
+    parser.add_argument('--goal', action='append', default=None, metavar='X,Y[,YAW]',
+                        help='run this goal instead of sampling (repeatable, world frame)')
+    parser.add_argument('--goal-timeout', type=float, default=None,
+                        help='override goal_timeout_sim_s')
     parser.add_argument('--warmup-drive', default=None,
                         help='cmd_vel recording to replay first, so there is a map to sample from')
     parser.add_argument('--config', default=os.path.join(share, 'config', 'nav_goals.yaml'))
     args, ros_args = parser.parse_known_args(argv)
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
+    if args.goal_timeout is not None:
+        cfg['goal_timeout_sim_s'] = args.goal_timeout
+    explicit = None
+    if args.goal:
+        explicit = []
+        for g in args.goal:
+            v = [float(p) for p in g.split(',')]
+            explicit.append((v[0], v[1], v[2] if len(v) > 2 else 0.0))
 
     rclpy.init(args=ros_args)
     node = NavGoalRunner(cfg)
@@ -304,7 +322,7 @@ def main(argv=None):
                 return node.sim_time - done_at[0] >= 6.0
             spin_until(node, finished, replayer.duration() * 20 + 120)
         planner = make_planner(args.world, float(cfg['goal_clearance_m']))
-        rows = node.run(planner, args.seed, args.count)
+        rows = node.run(planner, args.seed, args.count, goals=explicit)
         write_goal_csv(args.output, rows, 'manual', args.world, args.seed)
         s = summarise(rows)
         print(f"[nav_goals] {s['succeeded']}/{s['goals']} goals succeeded"

@@ -61,6 +61,34 @@ CHANGES = [
      'velocity smoother reads the EKF output'),
     ('    base_frame_id: "base_footprint"\n', '    base_frame_id: "base_link"\n', 1,
      'collision monitor: this robot has no base_footprint frame'),
+    # Depth camera as a second obstacle source. The 2D LiDAR plane (z = 0.20 m) misses
+    # anything lower, such as a lying survivor's legs; the robot drove into one and was
+    # pinned (docs/PHASE3.md). Both costmaps use voxel layers so that a LiDAR ray at
+    # 0.20 m does not erase the low obstacles the camera marked.
+    ('      obstacle_layer:\n        plugin: "nav2_costmap_2d::ObstacleLayer"\n        enabled: True\n'
+     '        observation_sources: scan\n',
+     '      obstacle_layer:\n        plugin: "nav2_costmap_2d::VoxelLayer"\n        enabled: True\n'
+     '        origin_z: 0.0\n        z_resolution: 0.05\n        z_voxels: 16\n        mark_threshold: 0\n'
+     '        observation_sources: scan depth\n', 1,
+     'global costmap: voxel layer instead of obstacle layer, with the depth camera as a second '
+     'source, so low obstacles the LiDAR plane misses are planned around'),
+    ('        observation_sources: scan\n', '        observation_sources: scan depth\n', 1,
+     'local costmap: the depth camera as a second observation source'),
+    ('          obstacle_min_range: 0.0\n',
+     '          obstacle_min_range: 0.0\n'
+     '        depth:\n'
+     '          topic: /camera/depth/points\n'
+     '          data_type: "PointCloud2"\n'
+     '          min_obstacle_height: 0.04\n'
+     '          max_obstacle_height: 0.60\n'
+     '          clearing: True\n'
+     '          marking: True\n'
+     '          raytrace_max_range: 2.0\n'
+     '          raytrace_min_range: 0.3\n'
+     '          obstacle_max_range: 2.0\n'
+     '          obstacle_min_range: 0.3\n', 2,
+     'the depth source: points 0.04-0.60 m above the floor, 0.3-2.0 m ahead (the floor itself, '
+     'seen from 0.53 m out, stays below 0.04 m)'),
 ]
 applied = []
 for old, new, expected, why in CHANGES:

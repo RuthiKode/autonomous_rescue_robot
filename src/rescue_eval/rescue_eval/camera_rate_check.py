@@ -17,7 +17,7 @@ import time
 
 import rclpy
 from rclpy.qos import QoSProfile, ReliabilityPolicy
-from sensor_msgs.msg import CameraInfo, Image
+from sensor_msgs.msg import CameraInfo, Image, PointCloud2
 
 
 def analyse(stamps, walls):
@@ -66,6 +66,8 @@ class Counter:
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--topic', default='/camera/image_raw')
+    parser.add_argument('--type', choices=['Image', 'PointCloud2'], default='Image',
+                        help='message type of --topic (only the header stamp is read)')
     parser.add_argument('--info-topic', default='/camera/camera_info')
     parser.add_argument('--duration', type=float, default=60.0, help='sim seconds')
     parser.add_argument('--mode', choices=['raw', 'deserialize'], default='raw')
@@ -80,7 +82,8 @@ def main(argv=None):
     reliability = (ReliabilityPolicy.RELIABLE if args.reliability == 'reliable'
                    else ReliabilityPolicy.BEST_EFFORT)
     qos = QoSProfile(depth=args.depth, reliability=reliability)
-    counters = [Counter(node, args.topic, Image, args.mode == 'raw', qos),
+    counters = [Counter(node, args.topic, Image if args.type == 'Image' else PointCloud2,
+                      args.mode == 'raw', qos),
                 Counter(node, args.info_topic, CameraInfo, True, qos)]
     image = counters[0]
     start = time.monotonic()

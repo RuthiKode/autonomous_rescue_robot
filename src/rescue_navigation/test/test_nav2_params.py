@@ -70,6 +70,25 @@ def test_the_controller_reads_speed_from_the_ekf_output():
     assert ctrl['FollowPath']['CostCritic']['consider_footprint'] is True
 
 
+def test_the_depth_camera_is_an_obstacle_source_in_both_costmaps():
+    # A lying survivor is below the LiDAR plane; the depth camera is what sees it.
+    lidar_z = _x('lidar_z')
+    layers = {
+        'local_costmap': P['local_costmap']['local_costmap']['ros__parameters']['voxel_layer'],
+        'global_costmap': P['global_costmap']['global_costmap']['ros__parameters']['obstacle_layer'],
+    }
+    for name, layer in layers.items():
+        assert layer['plugin'] == 'nav2_costmap_2d::VoxelLayer', name   # 3D, so LiDAR rays keep low marks
+        assert 'depth' in layer['observation_sources'].split(), name
+        depth = layer['depth']
+        assert depth['topic'] == '/camera/depth/points' and depth['data_type'] == 'PointCloud2'
+        # above the floor noise, and covering the heights the LiDAR plane misses
+        assert depth['min_obstacle_height'] >= 0.03
+        assert depth['max_obstacle_height'] > lidar_z
+        assert depth['obstacle_min_range'] >= _x('camera_clip_near')
+        assert depth['obstacle_max_range'] <= _x('camera_clip_far')
+
+
 def test_recovery_behaviours_are_enabled():
     plugins = P['behavior_server']['ros__parameters']['behavior_plugins']
     assert {'spin', 'backup', 'wait'} <= set(plugins)

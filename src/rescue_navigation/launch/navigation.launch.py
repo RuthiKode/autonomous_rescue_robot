@@ -14,7 +14,8 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+from launch_ros.actions import ComposableNodeContainer, Node
+from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
@@ -29,6 +30,46 @@ def generate_launch_description():
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('hazard', default_value='true',
                               description='true also starts the hazard layer (/hazard_map)'),
+        DeclareLaunchArgument('depth_obstacles', default_value='true',
+                              description='true converts the depth image to /camera/depth/points '
+                                          'for the costmaps (low obstacles under the LiDAR plane)'),
+        # depth image -> half-size depth image -> point cloud, for the costmaps' second
+        # observation source. A full 640 x 480 cloud is 307,000 points per frame at 15 Hz and
+        # was too heavy to deliver; half size is 76,800. Nearest-neighbour resizing (interpolation
+        # 0) keeps depth values from being averaged across object edges. Both nodes share one
+        # container with intra-process transport, so the images are not copied.
+        ComposableNodeContainer(
+            name='depth_points_container',
+            namespace='',
+            package='rclcpp_components',
+            executable='component_container',
+            condition=IfCondition(LaunchConfiguration('depth_obstacles')),
+            composable_node_descriptions=[
+                ComposableNode(
+                    package='image_proc',
+                    plugin='image_proc::ResizeNode',
+                    name='depth_resize',
+                    remappings=[('image/image_raw', '/camera/depth'),
+                                ('image/camera_info', '/camera/camera_info'),
+                                ('resize/image_raw', '/camera/depth_small/image_raw'),
+                                ('resize/camera_info', '/camera/depth_small/camera_info')],
+                    parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time'),
+                                 'use_scale': True, 'scale_height': 0.5, 'scale_width': 0.5,
+                                 'interpolation': 0}],
+                    extra_arguments=[{'use_intra_process_comms': True}],
+                ),
+                ComposableNode(
+                    package='depth_image_proc',
+                    plugin='depth_image_proc::PointCloudXyzNode',
+                    name='depth_points',
+                    remappings=[('image_rect', '/camera/depth_small/image_raw'),
+                                ('camera_info', '/camera/depth_small/camera_info'),
+                                ('points', '/camera/depth/points')],
+                    parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
+                    extra_arguments=[{'use_intra_process_comms': True}],
+                ),
+            ],
+        ),
         Node(
             package='rescue_mapping',
             executable='hazard_layer',

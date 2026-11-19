@@ -10,6 +10,8 @@
   <exec_depend>navigation2</exec_depend>
   <exec_depend>nav2_bringup</exec_depend>
   <exec_depend>rescue_mapping</exec_depend>
+  <exec_depend>depth_image_proc</exec_depend>
+  <exec_depend>rclcpp_components</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
