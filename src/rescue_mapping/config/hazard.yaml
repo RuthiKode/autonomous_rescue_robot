@@ -1,0 +1,29 @@
+# rescue_mapping hazard layer (docs/PLAN.md, stage 3).
+#
+# Definition: a hazard is a known-free cell in a passage narrower than the robot's
+# width plus a margin. The width is the robot's swept width, not its chassis width:
+# the robot can turn in place, so it needs room for the circle through its farthest
+# corner. That circle's diameter is 2 x 0.295 = 0.59 m for the 0.40 x 0.28 m chassis
+# offset -0.06 m from base_link (a unit test checks this value against the Xacro).
+# With the 0.20 m margin the threshold is 0.79 m, which makes the collapsed world's
+# 0.7 m gaps hazards and the rooms world's 1.0 m doors not.
+
+robot_width_m: 0.59
+margin_m: 0.20
+
+# A region is only reported if it is at least this large. Without this, the little
+# pockets in room corners, which a disk of the passage width cannot reach, would show
+# up as hazards. A 0.7 m gap in a 0.25 m thick barrier is about 0.18 m^2; a corner
+# pocket is about 0.03 m^2.
+min_area_m2: 0.08
+
+# Cells with an occupancy value at or above this count as obstacles.
+occupied_threshold: 65
+
+# Unknown cells are treated as free when measuring a passage, so a corridor that is
+# only partly explored is not reported as narrow just because its sides are unknown.
+# (Hazards are still drawn on known-free cells only.)
+
+topic_in: /map
+topic_out: /hazard_map
+publish_period_s: 2.0
