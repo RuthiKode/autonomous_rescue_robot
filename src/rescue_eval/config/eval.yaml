@@ -13,6 +13,7 @@ slam:
   ready_timeout_s: 60.0     # wall seconds to wait for map -> base_link before driving
   post_drive_settle_s: 6.0  # sim seconds after the drive, so SLAM can finish and publish /map
   map_save_timeout_s: 30.0  # wall seconds allowed for map_saver_cli
+  map_wait_s: 10.0          # map_saver_cli's own wait for /map (its default of 2 s failed once)
   trajectory_rate_hz: 10.0  # sampling rate of map -> base_link against Gazebo truth
   tf_wait_s: 1.0            # sim seconds to wait for a transform before dropping a sample
 

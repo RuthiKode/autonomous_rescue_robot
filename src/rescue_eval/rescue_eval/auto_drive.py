@@ -141,6 +141,9 @@ def main(argv=None):
     parser.add_argument('--world', required=True)
     parser.add_argument('--config', default=os.path.join(share, 'config', 'auto_drive.yaml'))
     parser.add_argument('--plan-only', action='store_true', help='print the tour and exit')
+    parser.add_argument('--min-subscribers', type=int, default=1,
+                        help='/cmd_vel subscribers to wait for before driving'
+                             ' (2 when recording: the bridge and the recorder)')
     args, ros_args = parser.parse_known_args(argv)
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
@@ -160,6 +163,16 @@ def main(argv=None):
         if spin_until(node, lambda: node.truth is not None, 60.0) != 'ok':
             print('no /ground_truth/odom: is the simulation running?')
             return 1
+        # A command published before a subscriber has connected is lost to that
+        # subscriber only. If the simulator bridge connects before the recorder,
+        # the robot moves on commands the recording never gets. So wait for all
+        # of them, then stand still briefly before the first real command.
+        if spin_until(node, lambda: node.cmd_pub.get_subscription_count()
+                      >= args.min_subscribers, 30.0) != 'ok':
+            print(f'/cmd_vel has {node.cmd_pub.get_subscription_count()} subscriber(s),'
+                  f' expected {args.min_subscribers}')
+            return 1
+        node.stop_and_settle(1.0)
         result = node.follow(waypoints, cfg['follower'])
         node.stop_and_settle(1.0)
         x, y = node.truth.pose.pose.position.x, node.truth.pose.pose.position.y

@@ -183,7 +183,8 @@ def main(argv=None):
                 saver = subprocess.run(
                     ['ros2', 'run', 'nav2_map_server', 'map_saver_cli', '-f', prefix,
                      '--fmt', 'pgm', '--ros-args', '-p', 'use_sim_time:=true',
-                     '-p', 'map_subscribe_transient_local:=true'],
+                     '-p', 'map_subscribe_transient_local:=true',
+                     '-p', f"save_map_timeout:={float(cfg['slam']['map_wait_s'])}"],
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                     timeout=float(cfg['slam']['map_save_timeout_s']), check=False)
                 with open(log_path, 'a') as f:

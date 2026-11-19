@@ -29,8 +29,16 @@ sleep 5
 ros2 run rescue_eval cmd_vel_record --output "$OUT" \
   --comment "world=$WORLD driver=auto_drive (ground-truth tour, not a human)" &
 REC=$!
-sleep 2
-ros2 run rescue_eval auto_drive --world $WORLD
+# Do not start driving until the recorder is really subscribed to /cmd_vel,
+# or the first commands of the drive are lost.
+for _ in $(seq 30); do
+  ros2 topic info /cmd_vel -v 2>/dev/null | grep -q "Node name: cmd_vel_recorder" && break
+  sleep 1
+done
+if ! ros2 topic info /cmd_vel -v 2>/dev/null | grep -q "Node name: cmd_vel_recorder"; then
+  echo "FAIL: the recorder never subscribed to /cmd_vel"; exit 1
+fi
+ros2 run rescue_eval auto_drive --world $WORLD --min-subscribers 2
 STATUS=$?
 echo "true end pose: $(gz model -m rescue_robot -p 2>/dev/null | tail -2 | tr '\n' ' ')"
 pkill -TERM -f "rescue_eval/cmd_vel_record"; wait $REC
