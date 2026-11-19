@@ -2,7 +2,7 @@
 
 Run on 2026-11-13, same machine and stack as Phase 1 (Ubuntu 24.04 under WSL2, ROS 2 Jazzy, Gazebo Harmonic, RTX 4050 through Mesa D3D12).
 
-**Result:** every gate item has output below. Three results look bad and are reported as such: map IoU is below the plan's 0.8 starting target in every world (0.53-0.62 against 0.8), the EKF is now slightly worse than raw wheel odometry on a clean floor, and a blocked robot with spinning wheels drags both the EKF and SLAM away from the truth.
+**Result:** every gate item has output below. Three results look bad and are reported as such: map IoU is below the plan's 0.8 starting target in every world (0.53-0.62 against 0.8), with the original friction the EKF was slightly worse than raw wheel odometry (fixed by adding wheel slip, see 0d-2), and a blocked robot with spinning wheels drags both the EKF and SLAM away from the truth.
 
 Nothing here was checked by eye. RViz2 loads both configs without crashing; whether they look right is yours to judge.
 
@@ -156,7 +156,7 @@ Every trial is a fresh headless simulation with its own Gazebo seed. Errors are 
 
 The drive test is the Phase 1 one (forward 2 s, turn 2 s, open loop). The square loop is 0.7 m x 0.5 m, three laps, steered on Gazebo's true pose so the path is the same every run.
 
-**This looks bad for the EKF, and it is a real result.** After the wheel fix, raw odometry is nearly exact on a clean floor: the wheels do not slip at `wheel_mu` = 0.35 with the configured acceleration limits. The EKF takes yaw from the gyro, which has a 0.0005 rad/s bias, so over the roughly 100 s square loop it drifts about 0.07 rad where raw odometry drifts 0.018 rad. The plan warned about exactly this ("perfect simulated odometry makes the EKF pointless"). Two ways to restore a real error for the EKF to correct, neither done here because it changes the Phase 1 robot:
+**This looks bad for the EKF, and it is a real result.** After the wheel fix, raw odometry is nearly exact on a clean floor: the wheels do not slip at `wheel_mu` = 0.35 with the configured acceleration limits. The EKF takes yaw from the gyro, which has a 0.0005 rad/s bias, so over the roughly 100 s square loop it drifts about 0.07 rad where raw odometry drifts 0.018 rad. The plan warned about exactly this ("perfect simulated odometry makes the EKF pointless"). Two ways to restore a real error for the EKF to correct, the first was done afterwards, see 0d-2:
 
 - lower `wheel_mu` until the wheels slip under normal acceleration, or
 - add noise to the wheel odometry itself (Gazebo's diff-drive has none).
@@ -164,6 +164,46 @@ The drive test is the Phase 1 one (forward 2 s, turn 2 s, open loop). The square
 The EKF does earn its place when the wheels really spin; see "Known issues".
 
 During the collapsed and open_plan trials a second simulation was running on another ROS domain (recording a drive). The numbers match the rooms trials, which ran alone.
+
+### 0d-2. Wheel slip follow-up (`wheel_mu` 0.35 to 0.12)
+
+You chose to deal with the wheel-slip question first, and I took the plan's own fix, lower wheel friction. The decision I made for you is the value; say if you want a different severity.
+
+**Sweep.** Rooms world, 3 open-loop drives and 1 square loop per value (`results/phase2/mu_sweep.txt`). The square loop is a single run per value, so those columns are indicative.
+
+| `wheel_mu` | Open-loop drive | Square: raw yaw / position error | Square: EKF yaw / position error |
+| --- | --- | --- | --- |
+| 0.35 (before) | no slip | -0.017 rad / 0.010 m | +0.064 rad / 0.025 m |
+| 0.20 | no slip | +0.012 rad / 0.005 m | +0.069 rad / 0.026 m |
+| 0.12 | no slip | -0.149 rad / 0.071 m | +0.037 rad / 0.015 m |
+| 0.08 | no slip | -2.56 rad / 0.98 m | -0.064 rad / 0.052 m |
+| 0.05 | +0.17 rad / 0.020 m | -0.84 rad / 0.96 m | -0.232 rad / 0.163 m |
+
+The open-loop drive (smooth, 0.5 m/s, 1 rad/s) does not slip until 0.05; the square loop (corner turns, stop-and-go) slips from about 0.15. 0.12 is the highest value where slip is clearly present, and odometry is still usable. At 0.08 and below, raw odometry is off by up to a metre.
+
+**Validation at 0.12** (same protocol as 0d: 10 open-loop drives and 3 square loops per world, `results/phase2_slip/ekf_validation.txt`):
+
+| World | Test | n | Raw yaw error (rad) | EKF yaw error (rad) | Raw position drift (m) | EKF position drift (m) |
+| --- | --- | --- | --- | --- | --- | --- |
+| rooms | drive | 10 | +0.0005 +/- 0.0000 | +0.0013 +/- 0.0033 | 0.0043 +/- 0.0000 | 0.0043 +/- 0.0004 |
+| rooms | square, 3 laps | 3 | -0.1504 +/- 0.0038 | +0.0203 +/- 0.0296 | 0.0731 +/- 0.0056 | 0.0116 +/- 0.0043 |
+| collapsed | drive | 10 | +0.0005 +/- 0.0000 | +0.0013 +/- 0.0033 | 0.0043 +/- 0.0000 | 0.0043 +/- 0.0004 |
+| collapsed | square, 3 laps | 3 | -0.1480 +/- 0.0060 | +0.0224 +/- 0.0297 | 0.0703 +/- 0.0037 | 0.0126 +/- 0.0051 |
+| open_plan | drive | 10 | +0.0005 +/- 0.0000 | +0.0013 +/- 0.0034 | 0.0043 +/- 0.0000 | 0.0042 +/- 0.0004 |
+| open_plan | square, 3 laps | 3 | -0.1531 +/- 0.0121 | +0.0218 +/- 0.0298 | 0.0757 +/- 0.0070 | 0.0117 +/- 0.0040 |
+
+With slip, the EKF cuts the square-loop yaw error from about -0.15 to +0.02 rad and the position error from about 0.07 m to 0.012 m, in every world. On the gentle open-loop drive nothing slips, so raw odometry and the EKF are equal. The EKF's yaw error across the three laps is not stable (+0.037, +0.038, -0.014 in rooms): the standard deviation (0.030) is larger than the mean.
+
+**Covariances re-tested, and not changed.** Under slip the measured twist error of the wheel odometry is 5.8e-3 (m/s)^2 for vx and 1.6e-3 (rad/s)^2 for yaw over the full validation, far above the values in `sensor_covariances.yaml` (7.5e-5 and 5.0e-4, measured without slip). I tried 6.0e-3 and 1.7e-3 on the nine square loops (`results/phase2_slip/ekf_validation_newcov.txt`):
+
+| Odometry vx / vyaw variance | EKF yaw error, mean over the 3 worlds | EKF position drift, mean |
+| --- | --- | --- |
+| 7.5e-5 / 5.0e-4 (kept) | +0.0215 rad | 0.0120 m |
+| 6.0e-3 / 1.7e-3 | +0.0268 rad | 0.0125 m |
+
+No improvement, so the file is unchanged. Two caveats: the "measured" value depends on the drive (squares alone give 2.0e-3 and 5.4e-3, the mixed set 5.8e-3 and 1.6e-3), so a single number is not well defined; and the EKF's error here is dominated by the gyro bias, which a covariance cannot remove.
+
+**Re-recorded drives.** The old drives were open-loop commands recorded at 0.35. Replayed with slip, the robot would not follow the same path, so the three drives were recorded again at 0.12 with the tour steering on the true pose (`src/rescue_eval/drives/` now holds those; the old ones are in git history).
 
 ### 0e. Evaluation script rerun
 
@@ -333,6 +373,18 @@ Reading the table:
 - **Three runs per world is a small sample.** The standard deviations are indicative only. The runs differ by Gazebo seed (sensor noise and slip), not by drive; the drive is one file per world.
 - **Excluded from the table:** three open_plan runs made with a faulty drive file (method `slam_replay_truncated_drive`, see Known issues), and one rooms run that failed to save its map (`map_not_saved`, repeated successfully as seed 3).
 
+### Baseline with wheel slip (`wheel_mu` 0.12)
+
+Same protocol, drives re-recorded at 0.12, method `slam_replay_slip` (`results/phase2_slip/`, a separate CSV). Mean +/- standard deviation, n = 3:
+
+| World | IoU (occupied) | Accuracy | ATE RMSE (m) | ATE RMSE, aligned (m) |
+| --- | --- | --- | --- | --- |
+| rooms | 0.6093 +/- 0.0310 | 0.9653 +/- 0.0034 | 0.0445 +/- 0.0121 | 0.0207 +/- 0.0021 |
+| collapsed | 0.6680 +/- 0.0069 | 0.9813 +/- 0.0008 | 0.0290 +/- 0.0053 | 0.0167 +/- 0.0011 |
+| open_plan | 0.5378 +/- 0.0348 | 0.9771 +/- 0.0026 | 0.1824 +/- 0.0239 | 0.1074 +/- 0.0071 |
+
+Against the no-slip baseline above: rooms IoU 0.528 to 0.609, collapsed 0.617 to 0.668, open_plan 0.565 to 0.538; ATE is similar or lower. **Do not read this as "slip helps mapping".** The two baselines use different drive files (the slip tours were planned again and recorded under slip), and with three runs each, differences of 0.05 in IoU are within the spread of the rooms world (sd 0.03-0.05). What the table does show is that SLAM still works with realistic slip: the map quality did not collapse, and the target of IoU 0.8 is still not reached.
+
 ## Deviations from the plan and from the Phase 2 instructions
 
 - **`/imu` and `/odom_raw` now come from `covariance_stamper`.** The bridge publishes `/gz/imu` and `/gz/odom_raw`. The plan's topic table lists the bridge as their source.
@@ -343,6 +395,7 @@ Reading the table:
 - **The EKF fuses wheel yaw rate again**, now that covariances weight it.
 - **`evo` comes from pip**, the only dependency outside rosdep.
 - **Wheel collision is 0.005 m wide**; the visual is unchanged.
+- **`wheel_mu` is 0.12, not the Phase 1 value 0.35**, and the three drives were recorded again under that friction. The no-slip results stay in this report as the clean-floor reference.
 - **Loop closure is on but was not confirmed.** The plan's gate says a loop closure is visible in RViz2. That is your check; every drive returns to its start to give SLAM the chance.
 
 ## Known issues
@@ -355,11 +408,13 @@ Reading the table:
 - **`map_saver_cli` failed once in 13 SLAM runs** (`Failed to spin map subscription`, its 2 s default wait). The wait is now 10 s (`eval.yaml`). The failed run stays in the CSV as `map_not_saved` and was repeated; the 10 s wait has not hit the failure again in the four runs since.
 - **Gazebo crashes on shutdown.** `gz sim` often ignores SIGINT for 5 s and then exits with code -11. Bags and maps are already written by then.
 - **The EKF logs `Failed to meet update rate`** once at start-up.
+- **Slip makes open-loop replay less repeatable.** Replay end-pose spread under slip was not re-measured; the figures in Step 2 are from the no-slip drives.
+- **Below `wheel_mu` 0.08 odometry becomes unusable** (0.98 m error in one square loop); the severe end was only run once per value.
 - **`evo` is not checked by rosdep**, and without it `run_eval` leaves the trajectory columns `nan` and says so.
 - **Carried over from Phase 1:** nobody has looked at the Gazebo GUI or driven by hand; `results/` is not committed; reachability of survivors is not proven by the generator.
 
 ## Decisions for you
 
-1. **Wheel slip.** Lower `wheel_mu`, add odometry noise, or accept near-perfect wheel odometry? This decides whether the EKF has anything to correct.
+1. **Wheel slip: settled in 0d-2 at `wheel_mu` 0.12.** Say if you want less or more slip (0.08 is the severe end).
 2. **IoU target.** Keep the strict 5 cm IoU and tune slam_toolbox toward 0.8, or add a tolerance of one cell to the metric?
 3. **Your own drives.** The baseline should eventually use drives you recorded, including one through the collapsed world's gaps.

@@ -26,7 +26,7 @@
   <xacro:property name="wheel_mass" value="0.4"/>
   <!-- Low Coulomb friction so the wheels slip under acceleration and turning.
        A rubber wheel on concrete is about 1.0. -->
-  <xacro:property name="wheel_mu" value="0.35"/>
+  <xacro:property name="wheel_mu" value="0.12"/>
 
   <!-- Casters (frictionless spheres). The rear one carries load, the front one is an anti-tip stop. -->
   <xacro:property name="caster_radius" value="0.025"/>
