@@ -1,0 +1,24 @@
+# `ros2 run rescue_eval nav_goals` and `run_eval --nav-goals`: the Nav2 goal runner.
+
+count: 20                    # random reachable goals per world and run
+
+# Goal selection. Goals come from cells that are reachable from the spawn on the
+# generator's own geometry (the ground truth) AND free in the live SLAM map, so each
+# goal is both reachable in the world and known to Nav2. They are drawn once, after
+# the warm-up drive, from a seeded generator; consecutive goals are at least
+# min_goal_distance_m apart because the robot starts each goal where the last ended.
+goal_clearance_m: 0.45       # distance from obstacles in the ground-truth grid (from base_link)
+map_clearance_m: 0.35        # radius around the goal that must be known-free in the live map
+min_goal_distance_m: 1.5
+min_goal_separation_m: 1.0   # between any two goals of one run
+
+# One goal
+goal_timeout_sim_s: 120.0    # cancel the goal after this many sim seconds
+success_distance_m: 0.35     # Nav2 must report success AND the true pose be this close to the goal
+settle_s: 1.0                # sim seconds standing still between goals
+server_wait_s: 60.0          # wall seconds to wait for the action server and the live map
+map_wait_s: 30.0
+
+# Names of the recovery nodes in Nav2's behavior tree (/behavior_tree_log). A recovery
+# "fires" when one of these nodes goes to RUNNING.
+recovery_node_pattern: '^(Spin|Wait|BackUp|DriveOnHeading|Clear.*Costmap.*)$'

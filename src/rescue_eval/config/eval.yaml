@@ -21,6 +21,10 @@ slam:
   trajectory_rate_hz: 10.0  # sampling rate of map -> base_link against Gazebo truth
   tf_wait_s: 1.0            # sim seconds to wait for a transform before dropping a sample
 
+# Runs with --nav-goals (Nav2 starts after the warm-up replay; goal settings: nav_goals.yaml)
+nav:
+  startup_timeout_s: 120.0  # wall seconds for bt_navigator to become active
+
 # Topics written to the rosbag. Topics that do not exist yet are simply empty.
 # Camera images are left out on purpose: they dominate the bag size.
 record_topics:
@@ -37,6 +41,10 @@ record_topics:
   - /robot_description
   - /detections
   - /survivors
+  - /behavior_tree_log
+  - /cmd_vel_nav
+  - /plan
+  - /hazard_map
   - /mission/state
   - /ground_truth/survivors
   - /ground_truth/survivor_markers

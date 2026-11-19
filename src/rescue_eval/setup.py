@@ -35,6 +35,7 @@ setup(
             'map_score = rescue_eval.map_score:main',
             'summarize = rescue_eval.summarize:main',
             'rescore = rescue_eval.rescore:main',
+            'nav_goals = rescue_eval.nav_goals:main',
         ],
     },
 )

@@ -30,6 +30,7 @@ from rescue_eval import map_score, trajectory
 from rescue_eval.cmd_vel_io import ClockNode, load_drive, Replayer
 from rescue_eval.driving import pose2d
 from rescue_eval.metrics import append_row, placeholder_metrics
+from rescue_eval.nav_goals import make_planner, NavGoalRunner, summarise, write_goal_csv
 from rescue_eval.sim_runner import launch_sim, Process, spin_until
 
 
@@ -80,6 +81,18 @@ class EvalNode(ClockNode):
             self._pending.pop(0)
 
 
+def _wait_nav_active(timeout_s, alive):
+    """Wait until bt_navigator, the last Nav2 node to come up, is in the active state."""
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline and alive():
+        out = subprocess.run(['ros2', 'lifecycle', 'get', '/bt_navigator'], capture_output=True,
+                             text=True, timeout=30, check=False).stdout
+        if 'active' in out and 'inactive' not in out:
+            return True
+        time.sleep(3.0)
+    return False
+
+
 def _bag_summary(bag_dir):
     """Return (total messages, number of topics with data) from the bag metadata."""
     meta_path = os.path.join(bag_dir, 'metadata.yaml')
@@ -102,12 +115,22 @@ def main(argv=None):
                         help='sim seconds to record (ignored with --drive)')
     parser.add_argument('--slam', action='store_true', help='run slam_toolbox and score the map')
     parser.add_argument('--drive', default=None, help='cmd_vel recording to replay')
+    parser.add_argument('--nav-goals', type=int, default=0, metavar='N',
+                        help='after the replay (needs --slam and --drive) start Nav2 and send N'
+                             ' random reachable goals through NavigateToPose')
+    parser.add_argument('--nav-seed', type=int, default=None,
+                        help='seed of the goal sampler (default: --seed)')
     parser.add_argument('--output-dir', default=None, help='where the CSV and bags are written')
     parser.add_argument('--config', default=os.path.join(share, 'config', 'eval.yaml'))
     args = parser.parse_args(argv)
 
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
+    with open(os.path.join(share, 'config', 'nav_goals.yaml')) as f:
+        nav_cfg = yaml.safe_load(f)
+    if args.nav_goals and not (args.slam and args.drive):
+        sys.exit('--nav-goals needs --slam and --drive (the warm-up drive that builds the map)')
+    nav_seed = args.seed if args.nav_seed is None else args.nav_seed
     method = args.method or cfg['method']
     duration = args.duration if args.duration is not None else float(cfg['duration_s'])
     out_dir = os.path.abspath(args.output_dir or cfg['output_dir'])
@@ -137,6 +160,8 @@ def main(argv=None):
     status = 'ok'
     sim_elapsed = wall_elapsed = 0.0
     map_yaml = ''
+    nav = None
+    goal_rows = []
     try:
         result = spin_until(node, lambda: node.sim_time is not None and node.sim_time > 1.0
                             and node.truth_seen, float(cfg['startup_timeout_s']), sim.alive)
@@ -193,6 +218,30 @@ def main(argv=None):
                     map_yaml = prefix + '.yaml'
                 elif status == 'ok':
                     status = 'map_not_saved'
+            if args.nav_goals and status == 'ok' and sim.alive():
+                # Nav2 starts only now: running during the replay, its collision monitor
+                # and velocity smoother also publish on /cmd_vel and disturb the drive.
+                node.logging = False
+                nav = Process(['ros2', 'launch', 'rescue_navigation', 'navigation.launch.py'],
+                              log_path)
+                print('[run_eval] starting Nav2', flush=True)
+                if not _wait_nav_active(float(cfg['nav']['startup_timeout_s']), sim.alive):
+                    status = 'nav_not_active'
+                else:
+                    runner = NavGoalRunner(nav_cfg)
+                    try:
+                        error = runner.wait_ready(sim.alive)
+                        if error:
+                            print('[run_eval] ' + error, flush=True)
+                            status = 'nav_not_ready'
+                        else:
+                            planner = make_planner(args.world, float(nav_cfg['goal_clearance_m']))
+                            goal_rows = runner.run(planner, nav_seed, args.nav_goals, sim.alive,
+                                                   log=lambda m: print(m, flush=True))
+                            if not goal_rows:
+                                status = 'no_goals'
+                    finally:
+                        runner.destroy_node()
     except KeyboardInterrupt:
         status = 'interrupted'
     except subprocess.TimeoutExpired:
@@ -201,6 +250,8 @@ def main(argv=None):
         print('[run_eval] shutting down', flush=True)
         if bag is not None:
             bag.stop(float(cfg['shutdown_timeout_s']))
+        if nav is not None:
+            nav.stop(float(cfg['shutdown_timeout_s']))
         sim.stop(float(cfg['shutdown_timeout_s']))
         log = node.log
         dropped = node.dropped
@@ -253,6 +304,16 @@ def main(argv=None):
         except ImportError:
             print('[run_eval] evo is not installed, trajectory error left as nan.'
                   ' Install it with: pip install --user --break-system-packages --no-deps evo')
+
+    if goal_rows:
+        write_goal_csv(os.path.join(run_dir, 'goals.csv'), goal_rows, run_id, args.world, nav_seed)
+        g = summarise(goal_rows)
+        row['nav_success_rate'] = f"{g['success_rate']:.4f}"
+        row['recoveries'] = g['recoveries']
+        print(f"[run_eval] navigation: {g['succeeded']}/{g['goals']} goals succeeded"
+              f" ({100 * g['success_rate']:.0f}%), recoveries reported {g['recoveries']},"
+              f" recovery events {g['recovery_events']},"
+              f" stuck without recovery {g['stuck_without_recovery']}")
 
     csv_path = os.path.join(out_dir, cfg['csv_name'])
     append_row(csv_path, row)
