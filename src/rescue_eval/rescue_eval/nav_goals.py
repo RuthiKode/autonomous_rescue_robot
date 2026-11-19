@@ -10,8 +10,9 @@ scoring, never given to Nav2.
 
 For every goal one CSV row records: the goal, status, error code, sim time, true
 path length, true final error, the recoveries Nav2 reported, and the recoveries
-seen on /behavior_tree_log. A goal that ended without success and without any
-recovery firing is flagged stuck_without_recovery (a gate item of docs/PLAN.md).
+seen on /behavior_tree_log. A goal that ran to its time limit without any recovery
+firing is flagged stuck_without_recovery (a gate item of docs/PLAN.md); a goal that Nav2
+aborted with an error is a reported failure and is not flagged.
 """
 import argparse
 import csv
@@ -212,7 +213,10 @@ class NavGoalRunner(Node):
         row['recoveries_reported'] = self._feedback_recoveries
         row['recovery_events'] = ';'.join(self._events)
         row['recovery_event_count'] = len(self._events)
-        row['stuck_without_recovery'] = int(not row['success'] and not self._events
+        # Stuck = the goal ran to its time limit with no recovery ever firing (a livelock: the
+        # robot keeps trying but nothing in Nav2 reacts). An explicit abort is a failure that
+        # Nav2 reported, not a stuck robot.
+        row['stuck_without_recovery'] = int(status == 'timeout' and not self._events
                                             and not self._feedback_recoveries)
         return row
 
