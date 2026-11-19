@@ -36,7 +36,9 @@ class Planner:
         self.height = grid.shape[0]
         blocked = grid != gw.GRID_FREE
         self.clearance = ndimage.distance_transform_edt(~blocked) * self.res
-        self.free = self.clearance > cfg['inflation_m']
+        self.inflation = cfg.get('inflation_by_world', {}).get(world, cfg['inflation_m'])
+        self.free = self.clearance > self.inflation
+        self.check_free = self.clearance > cfg['check_inflation_m']
         self.weight = cfg['clearance_weight']
         self.spawn = (builder.spawn['x'], builder.spawn['y'])
 
@@ -49,12 +51,20 @@ class Planner:
         return (self.origin[0] + (col + 0.5) * self.res,
                 self.origin[1] + (self.height - 1 - row + 0.5) * self.res)
 
-    def reachable(self):
-        labels, _ = ndimage.label(self.free, structure=np.ones((3, 3)))
+    def _component(self, free):
+        labels, _ = ndimage.label(free, structure=np.ones((3, 3)))
         start = labels[self.cell(*self.spawn)]
         if start == 0:
             raise RuntimeError('the spawn is not in free space at this inflation')
         return labels == start
+
+    def reachable(self):
+        return self._component(self.free)
+
+    def reachable_fraction(self):
+        """Cells reachable at the planning inflation / cells reachable at the check inflation."""
+        return float(np.count_nonzero(self.reachable())
+                     / np.count_nonzero(self._component(self.check_free)))
 
     def goals(self, count, min_spacing):
         """Farthest-point sampling over reachable cells, starting from the spawn."""
@@ -154,6 +164,14 @@ def main(argv=None):
                  for a, b in zip([planner.spawn] + waypoints, waypoints))
     print(f'{args.world}: {len(goals)} goals, {len(waypoints)} waypoints, {length:.1f} m')
     print('goals: ' + ', '.join(f'({x:.2f}, {y:.2f})' for x, y in goals))
+    fraction = planner.reachable_fraction()
+    print(f'inflation {planner.inflation:.2f} m: {100 * fraction:.0f}% of the floor that is'
+          f" reachable at {cfg['check_inflation_m']:.2f} m is reachable by this tour")
+    required = cfg['min_reachable_fraction'].get(args.world)
+    if required is not None and fraction < required:
+        print(f'FAIL: below the required {100 * required:.0f}%; a barrier or gap is closed'
+              ' to the planner')
+        return 1
     if args.plan_only:
         return 0
 

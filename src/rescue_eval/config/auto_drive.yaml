@@ -5,6 +5,16 @@
 robot_height_m: 0.30         # anything lower than this can be hit by the robot body
 grid_resolution: 0.05
 inflation_m: 0.40            # planning clearance from obstacles, measured from base_link
+# The robot's footprint reaches about 0.30 m from base_link, and the collapsed world's gaps
+# are 0.7 m wide (0.35 m each side of the centre), so that world needs a tighter value.
+inflation_by_world:
+  collapsed: 0.30
+# The tour must reach most of the floor: the share of cells that are reachable at the
+# planning inflation, out of those reachable at the (smaller) check inflation.
+check_inflation_m: 0.20
+# Worlds listed here must reach at least this share; the others only print it.
+min_reachable_fraction:
+  collapsed: 0.90
 clearance_weight: 0.6        # how strongly the planner prefers the middle of free space
 min_goal_spacing_m: 3.0
 
@@ -13,7 +23,7 @@ min_goal_spacing_m: 3.0
 # tour returns to the start so SLAM gets a loop to close.
 goals:
   rooms: 5
-  collapsed: 4
+  collapsed: 6
   open_plan: 5
 
 follower:
