@@ -81,6 +81,8 @@ def main(argv=None):
     parser.add_argument('--detector', choices=['yolo', 'oracle', 'none'], default='yolo',
                         help='yolo: pretrained YOLO; oracle: ground-truth TEST DOUBLE (never a'
                              ' detection result); none: explore only')
+    parser.add_argument('--model', default='',
+                        help='weights file for --detector yolo (default: perception.yaml)')
     parser.add_argument('--explore-params', default=None,
                         help='explore_lite parameter file to use instead of the project default')
     parser.add_argument('--output-dir', default=None)
@@ -160,7 +162,9 @@ def main(argv=None):
                 if args.detector != 'none':
                     procs.append(Process(['ros2', 'launch', 'rescue_perception',
                                           'perception.launch.py', f'detector:={args.detector}',
-                                          f'world:={args.world}'], log_path))
+                                          f'world:={args.world}']
+                                         + ([f'model:={os.path.abspath(args.model)}']
+                                            if args.model else []), log_path))
                     time.sleep(float(ecfg['perception_warmup_s'])
                                if args.detector == 'yolo' else 5.0)
                 explore_cmd = ['ros2', 'launch', 'rescue_exploration', 'explore_baseline.launch.py']

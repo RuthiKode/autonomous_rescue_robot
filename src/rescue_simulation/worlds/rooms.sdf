@@ -114,6 +114,9 @@
     </model>
     <model name="survivor_1">
       <static>true</static>
+      <plugin filename="gz-sim-label-system" name="gz::sim::systems::Label">
+        <label>1</label>
+      </plugin>
       <pose>-2.0762 -4.4845 0.0000 0.0000 0.0000 1.7777</pose>
       <link name="link">
         <collision name="p0_c"><pose>0.4000 0.0900 0.0800 0.0000 1.5708 0.0000</pose><geometry><cylinder><radius>0.0700</radius><length>0.8000</length></cylinder></geometry></collision>
@@ -132,6 +135,9 @@
     </model>
     <model name="survivor_2">
       <static>true</static>
+      <plugin filename="gz-sim-label-system" name="gz::sim::systems::Label">
+        <label>1</label>
+      </plugin>
       <pose>6.5004 -5.0223 0.0000 0.0000 0.0000 -1.1659</pose>
       <link name="link">
         <collision name="p0_c"><pose>0.0000 0.0900 0.4000 0.0000 0.0000 0.0000</pose><geometry><cylinder><radius>0.0700</radius><length>0.8000</length></cylinder></geometry></collision>
@@ -150,6 +156,9 @@
     </model>
     <model name="survivor_3">
       <static>true</static>
+      <plugin filename="gz-sim-label-system" name="gz::sim::systems::Label">
+        <label>1</label>
+      </plugin>
       <pose>-6.3596 3.2727 0.0000 0.0000 0.0000 -0.8607</pose>
       <link name="link">
         <collision name="p0_c"><pose>-0.4500 0.0900 0.0900 0.0000 1.5708 0.0000</pose><geometry><cylinder><radius>0.0700</radius><length>0.8000</length></cylinder></geometry></collision>

@@ -32,10 +32,12 @@ def _setup(context):
     with open(os.path.join(bringup_share, 'config', 'sim.yaml')) as f:
         cfg = yaml.safe_load(f)
 
-    world_file = os.path.join(sim_share, 'worlds', world + '.sdf')
-    truth_file = os.path.join(sim_share, 'worlds', world + '_survivors.yaml')
+    worlds_dir = (LaunchConfiguration('worlds_dir').perform(context)
+                  or os.path.join(sim_share, 'worlds'))
+    world_file = os.path.join(worlds_dir, world + '.sdf')
+    truth_file = os.path.join(worlds_dir, world + '_survivors.yaml')
     if not os.path.isfile(world_file):
-        available = sorted(f[:-4] for f in os.listdir(os.path.join(sim_share, 'worlds'))
+        available = sorted(f[:-4] for f in os.listdir(worlds_dir)
                            if f.endswith('.sdf'))
         raise RuntimeError(f"Unknown world '{world}'. Available: {', '.join(available)}")
 
@@ -51,7 +53,9 @@ def _setup(context):
 
     sim_time = {'use_sim_time': True}
     xacro_file = os.path.join(desc_share, 'urdf', 'rescue_robot.urdf.xacro')
-    robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
+    seg = 'true' if _flag(context, 'seg_camera') else 'false'
+    robot_description = ParameterValue(Command(['xacro ', xacro_file, ' seg_camera:=' + seg]),
+                                       value_type=str)
 
     actions = [
         ExecuteProcess(cmd=gz_cmd, additional_env=gz_env, output='screen'),
@@ -107,6 +111,13 @@ def _setup(context):
         ),
     ]
 
+    if _flag(context, 'seg_camera'):
+        actions.append(Node(
+            package='ros_gz_bridge', executable='parameter_bridge', output='screen',
+            arguments=['/camera/segmentation/labels_map@sensor_msgs/msg/Image[gz.msgs.Image'],
+            parameters=[sim_time],
+        ))
+
     if _flag(context, 'ekf'):
         actions.append(Node(
             package='robot_localization',
@@ -147,6 +158,10 @@ def generate_launch_description():
                               description='true runs the Gazebo server only (no GUI)'),
         DeclareLaunchArgument('seed', default_value='0',
                               description='Gazebo random seed (sensor noise)'),
+        DeclareLaunchArgument('worlds_dir', default_value='',
+                              description='directory with generated worlds (default: installed)'),
+        DeclareLaunchArgument('seg_camera', default_value='false',
+                              description='true adds a segmentation camera (dataset collection)'),
         DeclareLaunchArgument('ekf', default_value='true',
                               description='true starts the EKF that publishes odom -> base_link'),
         DeclareLaunchArgument('static_map_tf', default_value='false',

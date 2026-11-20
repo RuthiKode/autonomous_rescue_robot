@@ -25,10 +25,11 @@ def _setup(context):
     sim_time = {'use_sim_time': True}
     actions = []
     if detector == 'yolo':
+        model = LaunchConfiguration('model').perform(context)
         actions.append(ExecuteProcess(
             cmd=[LaunchConfiguration('venv_python').perform(context), '-m',
                  'rescue_perception.yolo_detector', '--ros-args', '--params-file', config,
-                 '-p', 'use_sim_time:=true'],
+                 '-p', 'use_sim_time:=true'] + (['-p', f'model:={model}'] if model else []),
             name='yolo_detector', output='screen'))
     elif detector == 'oracle':
         truth = os.path.join(get_package_share_directory('rescue_simulation'), 'worlds',
@@ -48,6 +49,8 @@ def generate_launch_description():
         DeclareLaunchArgument('detector', default_value='yolo'),
         DeclareLaunchArgument('world', default_value='rooms',
                               description='only used by detector:=oracle'),
+        DeclareLaunchArgument('model', default_value='',
+                              description='weights file for detector:=yolo (default: perception.yaml)'),
         DeclareLaunchArgument('venv_python',
                               default_value=os.path.expanduser('~/venvs/yolo/bin/python')),
         OpaqueFunction(function=_setup),

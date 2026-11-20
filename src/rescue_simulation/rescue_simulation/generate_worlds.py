@@ -194,6 +194,10 @@ class WorldBuilder:
             out.extend([
                 f'    <model name="survivor_{s["id"]}">',
                 '      <static>true</static>',
+                # semantic label 1 = survivor; only a segmentation camera reads it (dataset collection)
+                '      <plugin filename="gz-sim-label-system" name="gz::sim::systems::Label">',
+                '        <label>1</label>',
+                '      </plugin>',
                 f'      <pose>{_fmt(s["x"], s["y"], 0.0, 0.0, 0.0, s["yaw"])}</pose>',
                 '      <link name="link">',
             ])
