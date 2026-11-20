@@ -34,3 +34,11 @@ frames_*.gv
 
 # Third-party source fetched by scripts/fetch_third_party.sh
 src/third_party/
+
+# Week 6: dataset frames and training runs (regenerate with scripts/collect_all.sh, train_all.sh)
+results/dataset/
+results/detector/runs/
+results/phase4/runs/
+results/phase5*/runs/
+results/phase5*/bags/
+results/phase4/bags/

@@ -44,13 +44,28 @@ def link_split(rows, name, root):
                 os.symlink(os.path.abspath(f"{DATA}/{sub}/{r['image']}.{ext}"), dst)
 
 
+def split(holdout, rows):
+    """(train, val, test) frames.
+
+    holdout = a layout name: train on the other layouts, test on that layout (seeds in TEST_SEEDS).
+    holdout = 'all': the detector the pipeline uses. It trains on every layout but not on world
+    seed 42 (the committed worlds the evaluation runs in), which is the test set; layouts are
+    seen, survivor and obstacle placements are not.
+    """
+    if holdout == 'all':
+        return ([r for r in rows if r['seed'] not in ('42', VAL_SEED)],
+                [r for r in rows if r['seed'] == VAL_SEED],
+                [r for r in rows if r['seed'] == '42'])
+    return ([r for r in rows if r['layout'] != holdout and r['seed'] != VAL_SEED],
+            [r for r in rows if r['layout'] != holdout and r['seed'] == VAL_SEED],
+            [r for r in rows if r['layout'] == holdout and r['seed'] in TEST_SEEDS])
+
+
 def make_fold(holdout):
     rows = read_meta()
     root = f'{DATA}/folds/{holdout}'
     shutil.rmtree(root, ignore_errors=True)
-    train = [r for r in rows if r['layout'] != holdout and r['seed'] != VAL_SEED]
-    val = [r for r in rows if r['layout'] != holdout and r['seed'] == VAL_SEED]
-    test = [r for r in rows if r['layout'] == holdout and r['seed'] in TEST_SEEDS]
+    train, val, test = split(holdout, rows)
     for name, part in (('train', train), ('val', val), ('test', test)):
         link_split(part, name, root)
     with open(f'{root}/data.yaml', 'w') as f:
@@ -129,7 +144,7 @@ def score(model, rows, conf, imgsz):
 
 def cmd_eval(args):
     from ultralytics import YOLO
-    rows = [r for r in read_meta() if r['layout'] == args.holdout and r['seed'] in TEST_SEEDS]
+    rows = split(args.holdout, read_meta())[2]
     seed42 = [r for r in rows if r['seed'] == '42']
     result = {'holdout': args.holdout, 'conf': args.conf, 'imgsz': args.imgsz}
     models = {'pretrained': PRETRAINED,
@@ -151,7 +166,7 @@ def main():
     sub = ap.add_subparsers(dest='cmd', required=True)
     for name in ('train', 'eval'):
         p = sub.add_parser(name)
-        p.add_argument('--holdout', required=True, choices=LAYOUTS)
+        p.add_argument('--holdout', required=True, choices=LAYOUTS + ('all',))
         p.add_argument('--imgsz', type=int, default=640)
         p.add_argument('--tag', default='', help='suffix of the run name (e.g. _r2 for round 2)')
         if name == 'train':
