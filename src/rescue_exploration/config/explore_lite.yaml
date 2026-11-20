@@ -1,0 +1,17 @@
+# explore_lite baseline (m-explore-ros2, pinned in scripts/fetch_third_party.sh).
+# Tuned values (docs/PLAN.md, stage 6: frontier size, gain and potential scales) are
+# commented with the default they replace; docs/PHASE4.md shows the measurements.
+/**:
+  ros__parameters:
+    robot_base_frame: base_link
+    return_to_init: true          # drive back to the start when no frontier is left
+    costmap_topic: map            # slam_toolbox's /map; unknown = -1, free = 0
+    costmap_updates_topic: map_updates
+    visualize: true               # publishes /explore/frontiers markers
+    planner_frequency: 0.3        # default 0.15: pick a new frontier goal every 3.3 s
+    progress_timeout: 30.0        # abandon (blacklist) a goal that makes no progress for this long
+    potential_scale: 3.0          # weight of the distance to a frontier (lower = prefers near)
+    orientation_scale: 0.0
+    gain_scale: 1.0               # weight of the frontier size
+    transform_tolerance: 0.3
+    min_frontier_size: 0.5        # default 0.75 m; the robot is 0.28 m wide

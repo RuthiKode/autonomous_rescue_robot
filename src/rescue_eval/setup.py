@@ -36,6 +36,7 @@ setup(
             'summarize = rescue_eval.summarize:main',
             'rescore = rescue_eval.rescore:main',
             'nav_goals = rescue_eval.nav_goals:main',
+            'explore_eval = rescue_eval.explore_eval:main',
         ],
     },
 )

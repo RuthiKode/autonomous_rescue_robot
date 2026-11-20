@@ -31,3 +31,6 @@ frames_*.gv
 .vscode/
 .idea/
 *.swp
+
+# Third-party source fetched by scripts/fetch_third_party.sh
+src/third_party/

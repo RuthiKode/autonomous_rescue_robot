@@ -1,0 +1,45 @@
+# Parameters of the perception nodes (docs/PLAN.md, stages 4 and 5).
+
+yolo_detector:
+  ros__parameters:
+    image_topic: /camera/image_raw
+    detections_topic: /detections
+    model: ~/venvs/yolo/weights/yolov8n.pt   # pretrained COCO weights (not committed; see docs/PHASE4.md)
+    confidence: 0.25           # detector threshold; the localizer applies its own below
+    iou: 0.5
+    image_size: 640            # inference size cap (longest side); the camera is 640 x 480
+    classes: [0]               # COCO class 0 = person
+    device: auto               # cuda:0 if PyTorch sees the GPU, else cpu
+    max_rate_hz: 15.0          # never process more than this many frames per sim second
+
+# ORACLE test double (ground truth; never a detection result). Used only while the real
+# detector finds nothing; the launch file adds truth_file for the chosen world.
+oracle_detector:
+  ros__parameters:
+    depth_topic: /camera/depth
+    camera_info_topic: /camera/camera_info
+    detections_topic: /detections
+    max_range_m: 6.0
+    rate_hz: 10.0
+    confidence: 0.9
+    depth_agreement_m: 0.7
+
+survivor_localizer:
+  ros__parameters:
+    detections_topic: /detections
+    depth_topic: /camera/depth
+    camera_info_topic: /camera/camera_info
+    survivors_topic: /survivors
+    map_frame: map
+    base_frame: base_link
+    sync_slop_s: 0.15          # detection and depth frame must be this close in time
+    min_confidence: 0.30       # reject detections below this score
+    central_fraction: 0.5      # median depth over the central half of the box
+    min_range_m: 0.4           # reject depth outside this range
+    max_range_m: 6.0
+    association_radius_m: 1.0  # a point joins the nearest track within this radius
+    confirm_hits: 5            # hits needed to confirm a candidate ...
+    confirm_views: 2           # ... taken from at least this many robot positions ...
+    view_separation_m: 0.75    # ... each at least this far from the others
+    expire_s: 60.0             # unconfirmed candidates not seen for this long are dropped
+    tf_timeout_s: 0.1

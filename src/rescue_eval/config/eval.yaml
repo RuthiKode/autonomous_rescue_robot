@@ -26,6 +26,17 @@ nav:
   startup_timeout_s: 60.0   # wall seconds per attempt for bt_navigator to become active
   start_attempts: 3         # Nav2 is restarted this many times if its bring-up aborts
 
+# Runs of explore_eval (autonomous exploration)
+explore:
+  time_limit_s: 900.0       # sim seconds
+  min_time_s: 150.0         # do not stop on a plateau before this
+  plateau_window_s: 90.0    # stop when coverage grew less than plateau_gain over this window
+  plateau_gain: 0.005
+  robot_radius_m: 0.30      # cells nearer than this to an obstacle are not reachable
+  perception_warmup_s: 25.0 # wall seconds for the detector to load before exploring starts
+  wakeup_speed_mps: 0.3     # slam_toolbox does not grow its map until the robot translates,
+  wakeup_s: 3.0             # so the robot drives forward this long (about 0.9 m) first
+
 # Topics written to the rosbag. Topics that do not exist yet are simply empty.
 # Camera images are left out on purpose: they dominate the bag size.
 record_topics:
@@ -42,6 +53,8 @@ record_topics:
   - /robot_description
   - /detections
   - /survivors
+  - /survivors/markers
+  - /explore/frontiers
   - /behavior_tree_log
   - /cmd_vel_nav
   - /plan
