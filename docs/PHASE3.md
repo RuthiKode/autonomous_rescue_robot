@@ -181,6 +181,6 @@ A goal outside the map (11.0, 0.0) in the rooms world is rejected by the planner
 - **Collapsed goals are in the start zone** in the random-goal baseline; the gaps have their own test.
 - **Recovery logging comes from `/behavior_tree_log`**, not from Nav2's own counter, which is also recorded.
 
-## Decision for you
+## Decision
 
-The rooms world fails in two of three runs through a SLAM pose jump I could not fix. Options: (1) accept it for now and handle it in the mission tree's localization-jump branch (plan stage 7, as the plan intends); (2) spend a further session on it with many seeds, since each test is a 17-minute run: rooms with the depth source off (to settle whether it matters), slam_toolbox's correlation search space, or less wheel slip; (3) change the rooms world so it is less symmetric. I recommend (1) and a one-line warning in the plan's risks table.
+**Settled: leave the rooms SLAM jump for the mission tree.** The localization-jump branch (plan stage 7: map-to-odom changes by more than a threshold in one step, then stop, rotate in place to re-scan, resume) is where the response belongs. The rooms numbers above stay as measured, with no fix attempted. I added the risk to the plan's risks table (`docs/PLAN.md`). Open for that phase: whether the depth source plays a part (rooms with it off, many seeds), and whether stopping and re-scanning actually re-localizes a pose that is 1-1.5 m off, since SLAM here never corrected itself.

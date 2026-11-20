@@ -255,5 +255,6 @@ The riskiest items are the Gazebo GUI under WSL2, narrow-gap navigation and dete
 | Memory runs out with Gazebo, Nav2, SLAM and YOLO together | Set limits in `.wslconfig`, run headless, lower sensor rates and the YOLO input size |
 | `explore_lite` does not build on Jazzy | Write a nearest-frontier baseline yourself; it takes a few days and is also a fair baseline |
 | `py_trees_ros` is not available on Jazzy | Use a plain state machine with the same states and failure handling |
+| slam_toolbox's pose jumps by 1-1.5 m in symmetric, corridor-like layouts and does not recover (measured in the rooms world, Phase 3: 2 of 3 runs) | Detect the jump in the mission tree (map-to-odom change in one step), stop and re-scan; check whether re-localization works before relying on it |
 | Gazebo non-determinism blurs comparisons | Use more seeds and compare conditions pairwise on the same seeds |
 | The schedule slips | Cut, in order: custom dashboard, extra ablations, extra world variants. Never cut the evaluation |
