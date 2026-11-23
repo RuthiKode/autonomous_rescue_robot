@@ -1,0 +1,6 @@
+{
+ "weights": "results/detector/runs/all/weights/best.pt",
+ "frames": 2921,
+ "false_positive_frames": 1136,
+ "extra_copies_each": 2
+}

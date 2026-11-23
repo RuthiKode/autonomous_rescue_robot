@@ -61,6 +61,29 @@ def inverse_transform_point(translation, rotation, point):
                                          point[2] - translation[2]))
 
 
+def point_visible(point_cam, depth, fx, fy, cx, cy, min_range, max_range, margin=20,
+                  occlusion_tol=0.6, window=2):
+    """Could the camera see a point given in the optical frame (x right, y down, z forward)?
+
+    True when the point is within the depth range, projects inside the image (minus `margin`
+    pixels) and no surface in the depth image is more than `occlusion_tol` metres nearer than
+    the point along that pixel. Invalid depth (NaN, inf) counts as "nothing in the way".
+    """
+    x, y, z = point_cam
+    if not (min_range < z < max_range):
+        return False
+    h, w = depth.shape
+    u, v = fx * x / z + cx, fy * y / z + cy
+    if not (margin <= u < w - margin and margin <= v < h - margin):
+        return False
+    patch = depth[max(0, int(v) - window):int(v) + window + 1,
+                  max(0, int(u) - window):int(u) + window + 1]
+    valid = patch[np.isfinite(patch) & (patch > 0.0)]
+    if valid.size == 0:
+        return True
+    return float(np.median(valid)) >= z - occlusion_tol
+
+
 def yaw_from_quat(q):
     x, y, z, w = q
     return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))

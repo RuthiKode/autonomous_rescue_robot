@@ -24,5 +24,6 @@ setup(
     entry_points={'console_scripts': [
         'survivor_localizer = rescue_perception.localizer_node:main',
         'oracle_detector = rescue_perception.oracle_detector:main',
+        'frame_logger = rescue_perception.frame_logger:main',
     ]},
 )

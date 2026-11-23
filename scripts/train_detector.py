@@ -27,21 +27,56 @@ TEST_SEEDS = {'42', '1', '2', '3', '4', '5'}   # worlds 6 and up are extra train
 PRETRAINED = os.path.expanduser('~/venvs/yolo/weights/yolov8n.pt')
 
 
+EXPLORE = 'results/dataset_explore'     # frames logged while exploring (collect_explore.sh)
+EXPLORE_VAL_SEED = '13'                 # exploration worlds 11 and 12 train, 13 validates
+
+
 def read_meta():
     rows = list(csv.DictReader(open(f'{DATA}/meta.csv')))
     for r in rows:
         r['boxes'] = json.loads(r['boxes'])
+        r['dir'] = DATA
     return rows
 
 
-def link_split(rows, name, root):
+def read_explore():
+    """Frames logged along exploration paths; tag = <layout>_collect_s<seed>_seed<seed>_<time>."""
+    import re
+    rows = list(csv.DictReader(open(f'{EXPLORE}/meta.csv')))
+    for r in rows:
+        m = re.match(r'(\w+?)_collect_s(\d+)_', r['tag'])
+        r['layout'], r['seed'] = m.group(1), m.group(2)
+        r['boxes'] = json.loads(r['boxes'])
+        r['dir'] = EXPLORE
+    return rows
+
+
+def link_split(rows, name, root, copies=None):
+    """Symlink frames into root/name. copies = {image: n} adds n extra copies of those frames."""
     for sub in ('images', 'labels'):
         os.makedirs(f'{root}/{name}/{sub}', exist_ok=True)
     for r in rows:
-        for sub, ext in (('images', 'png'), ('labels', 'txt')):
-            dst = f"{root}/{name}/{sub}/{r['image']}.{ext}"
-            if not os.path.exists(dst):
-                os.symlink(os.path.abspath(f"{DATA}/{sub}/{r['image']}.{ext}"), dst)
+        for k in range(1 + (copies or {}).get(r['image'], 0)):
+            for sub, ext in (('images', 'png'), ('labels', 'txt')):
+                dst = f"{root}/{name}/{sub}/{r['image']}{'' if k == 0 else f'_dup{k}'}.{ext}"
+                if not os.path.exists(dst):
+                    os.symlink(os.path.abspath(f"{r['dir']}/{sub}/{r['image']}.{ext}"), dst)
+
+
+def mine_false_positives(weights, rows, conf=0.30, imgsz=640):
+    """Names of frames where the detector fires on something that is not labelled."""
+    from ultralytics import YOLO
+    model = YOLO(weights)
+    names = set()
+    for i in range(0, len(rows), 16):
+        chunk = rows[i:i + 16]
+        for r, res in zip(chunk, model.predict([f"{r['dir']}/images/{r['image']}.png" for r in chunk],
+                                               imgsz=imgsz, conf=conf, classes=[0], device=0,
+                                               verbose=False)):
+            if any(not any(iou(b, g[:4]) >= 0.5 for g in r['boxes'])
+                   for b in res.boxes.xyxy.tolist()):
+                names.add(r['image'])
+    return names
 
 
 def split(holdout, rows):
@@ -61,13 +96,27 @@ def split(holdout, rows):
             [r for r in rows if r['layout'] == holdout and r['seed'] in TEST_SEEDS])
 
 
-def make_fold(holdout):
+def make_fold(holdout, tag='', explore=False, mine=None, dup=2):
     rows = read_meta()
-    root = f'{DATA}/folds/{holdout}'
+    root = f'{DATA}/folds/{holdout}{tag}'
     shutil.rmtree(root, ignore_errors=True)
     train, val, test = split(holdout, rows)
+    copies = None
+    if explore:
+        ex = [r for r in read_explore() if holdout == 'all' or r['layout'] != holdout]
+        ex_train = [r for r in ex if r['seed'] != EXPLORE_VAL_SEED]
+        val = val + [r for r in ex if r['seed'] == EXPLORE_VAL_SEED]
+        copies = {}
+        if mine:
+            hard = mine_false_positives(mine, ex_train)
+            copies = {name: dup for name in hard}
+            os.makedirs(OUT, exist_ok=True)
+            json.dump({'weights': mine, 'frames': len(ex_train), 'false_positive_frames': len(hard),
+                       'extra_copies_each': dup}, open(f'{OUT}/mining{tag}.json', 'w'), indent=1)
+            print(f'mined {len(hard)} of {len(ex_train)} exploration frames with a false positive')
+        train = train + ex_train
     for name, part in (('train', train), ('val', val), ('test', test)):
-        link_split(part, name, root)
+        link_split(part, name, root, copies if name == 'train' else None)
     with open(f'{root}/data.yaml', 'w') as f:
         f.write(f"path: {os.path.abspath(root)}\ntrain: train/images\nval: val/images\n"
                 f"test: test/images\nnames:\n  0: person\n")
@@ -76,8 +125,8 @@ def make_fold(holdout):
 
 def cmd_train(args):
     from ultralytics import YOLO
-    root, n = make_fold(args.holdout)
-    print(f'fold {args.holdout}: train {n[0]}, val {n[1]}, test {n[2]} frames')
+    root, n = make_fold(args.holdout, args.tag, args.explore, args.mine)
+    print(f'fold {args.holdout}{args.tag}: train {n[0]}, val {n[1]}, test {n[2]} frames')
     model = YOLO(PRETRAINED)
     model.train(data=f'{root}/data.yaml', epochs=args.epochs, imgsz=args.imgsz, batch=16,
                 device=0, workers=2, project=os.path.abspath(f'{OUT}/runs'),
@@ -161,9 +210,35 @@ def cmd_eval(args):
         json.dump(result, f, indent=1)
 
 
+def cmd_explore_fp(args):
+    """False-positive rate on exploration-path frames of the validation worlds (seed 13)."""
+    from ultralytics import YOLO
+    rows = [r for r in read_explore() if r['seed'] == EXPLORE_VAL_SEED]
+    model = YOLO(args.weights)
+    fp_boxes = fp_frames = tp = fn = 0
+    for i in range(0, len(rows), 16):
+        chunk = rows[i:i + 16]
+        for r, res in zip(chunk, model.predict(
+                [f"{r['dir']}/images/{r['image']}.png" for r in chunk], imgsz=640, conf=args.conf,
+                classes=[0], device=0, verbose=False)):
+            preds = res.boxes.xyxy.tolist()
+            bad = [b for b in preds if not any(iou(b, g[:4]) >= 0.5 for g in r['boxes'])]
+            fp_boxes += len(bad)
+            fp_frames += bool(bad)
+            hit = sum(any(iou(b, g[:4]) >= 0.5 for b in preds) for g in r['boxes'])
+            tp += hit
+            fn += len(r['boxes']) - hit
+    print(f"{args.weights}: {len(rows)} exploration frames, {fp_frames} with a false positive "
+          f"({100 * fp_frames / max(len(rows), 1):.1f} %), {fp_boxes} false boxes, "
+          f"recall {tp / max(tp + fn, 1):.2f} ({tp + fn} labelled boxes)")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = ap.add_subparsers(dest='cmd', required=True)
+    pf = sub.add_parser('explore-fp')
+    pf.add_argument('--weights', required=True)
+    pf.add_argument('--conf', type=float, default=0.30)
     for name in ('train', 'eval'):
         p = sub.add_parser(name)
         p.add_argument('--holdout', required=True, choices=LAYOUTS + ('all',))
@@ -171,11 +246,16 @@ def main():
         p.add_argument('--tag', default='', help='suffix of the run name (e.g. _r2 for round 2)')
         if name == 'train':
             p.add_argument('--epochs', type=int, default=40)
+            p.add_argument('--explore', action='store_true',
+                           help='add the frames logged along exploration paths')
+            p.add_argument('--mine', default=None, metavar='WEIGHTS',
+                           help='with --explore: weights used to find false-positive frames, which'
+                                ' are then repeated 2 more times in the training set')
         else:
             p.add_argument('--conf', type=float, default=0.30,
                            help='detection threshold (the localizer uses 0.30)')
     args = ap.parse_args()
-    return {'train': cmd_train, 'eval': cmd_eval}[args.cmd](args)
+    return {'train': cmd_train, 'eval': cmd_eval, 'explore-fp': cmd_explore_fp}[args.cmd](args)
 
 
 if __name__ == '__main__':

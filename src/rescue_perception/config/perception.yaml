@@ -38,8 +38,13 @@ survivor_localizer:
     min_range_m: 0.4           # reject depth outside this range
     max_range_m: 6.0
     association_radius_m: 1.0  # a point joins the nearest track within this radius
-    confirm_hits: 5            # hits needed to confirm a candidate ...
+    confirm_hits: 20           # hits needed to confirm a candidate (5 until Phase 5 round 4) ...
     confirm_views: 2           # ... taken from at least this many robot positions ...
     view_separation_m: 0.75    # ... each at least this far from the others
+    confirm_confidence: 0.6    # ... whose mean detection confidence is at least this
+    merge_radius_m: 1.5        # only the strongest confirmed track within this is reported as a pin
+    min_hit_rate: 0.0          # hits per in-view frame a track needs; 0 = off (tested, no clear gain)
+    rate_after_views: 20
+    occlusion_tolerance_m: 0.6
     expire_s: 60.0             # unconfirmed candidates not seen for this long are dropped
     tf_timeout_s: 0.1

@@ -28,24 +28,30 @@ import tf2_ros
 from visualization_msgs.msg import Marker, MarkerArray
 from vision_msgs.msg import Detection2DArray
 
-from rescue_perception.geometry import backproject, median_depth, transform_point
+from rescue_perception.geometry import (backproject, inverse_transform_point, median_depth,
+                                        point_visible, transform_point)
 from rescue_perception.tracker import CONFIRMED, Tracker
 
-STATE_COLOUR = {'candidate': (1.0, 0.8, 0.0), 'confirmed': (1.0, 0.1, 0.1)}
+MERGED = 'merged'      # a confirmed track that a stronger one within merge_radius_m replaces
+STATE_COLOUR = {'candidate': (1.0, 0.8, 0.0), 'confirmed': (1.0, 0.1, 0.1),
+                MERGED: (0.5, 0.5, 0.5)}
 
 
-def survivor_messages(tracks, stamp, frame_id):
+def survivor_messages(tracks, stamp, frame_id, suppressed=()):
     """Build the /survivors message and its RViz markers from tracks.
 
-    Kept free of the node so a test can build real messages: ROS message fields need real
-    floats, and a wrong type aborts the whole process in C (an int scale did exactly that).
+    Tracks whose id is in `suppressed` are reported with state 'merged', so only 'confirmed'
+    ones count as pins. Kept free of the node so a test can build real messages: ROS message
+    fields need real floats, and a wrong type aborts the whole process in C (an int scale did
+    exactly that).
     """
     msg = SurvivorArray()
     msg.header.stamp, msg.header.frame_id = stamp, frame_id
     markers = MarkerArray()
     for t in tracks:
         s = Survivor()
-        s.id, s.state = int(t.id), t.state
+        state = MERGED if t.id in suppressed else t.state
+        s.id, s.state = int(t.id), state
         s.pose.position.x, s.pose.position.y = float(t.x), float(t.y)
         s.pose.position.z = float(t.z)
         s.pose.orientation.w = 1.0
@@ -53,7 +59,7 @@ def survivor_messages(tracks, stamp, frame_id):
         s.first_seen = TimeMsg(sec=int(t.first_seen),
                                nanosec=int((t.first_seen % 1.0) * 1e9))
         msg.survivors.append(s)
-        colour = STATE_COLOUR[t.state]
+        colour = STATE_COLOUR[state]
         for ns, mtype, scale, z_off in (('pin', Marker.SPHERE, (0.35, 0.35, 0.35), 0.0),
                                         ('label', Marker.TEXT_VIEW_FACING, (0.0, 0.0, 0.3), 0.5)):
             m = Marker()
@@ -66,7 +72,7 @@ def survivor_messages(tracks, stamp, frame_id):
             m.color.r, m.color.g, m.color.b, m.color.a = (*colour, 0.9)
             if mtype == Marker.TEXT_VIEW_FACING:
                 m.color.r = m.color.g = m.color.b = 1.0
-                m.text = f'#{t.id} {t.state} ({t.hits})'
+                m.text = f'#{t.id} {state} ({t.hits})'
             markers.markers.append(m)
     return msg, markers
 
@@ -98,11 +104,18 @@ class SurvivorLocalizer(Node):
         p('confirm_views', 2)
         p('view_separation_m', 0.75)
         p('expire_s', 60.0)
+        p('confirm_confidence', 0.0)     # mean confidence a confirmed track needs
+        p('merge_radius_m', 0.0)         # only the strongest confirmed track within this is a pin
+        p('min_hit_rate', 0.0)           # 0 = off; see Tracker
+        p('rate_after_views', 20)
+        p('occlusion_tolerance_m', 0.6)
         p('tf_timeout_s', 0.1)
         g = lambda k: self.get_parameter(k).value  # noqa: E731
         self._g = g
         self.tracker = Tracker(g('association_radius_m'), g('confirm_hits'), g('confirm_views'),
-                               g('view_separation_m'), g('expire_s'))
+                               g('view_separation_m'), g('expire_s'), g('min_hit_rate'),
+                               g('rate_after_views'), g('confirm_confidence'),
+                               g('merge_radius_m'))
         self._k = None
         self.stats = {'pairs': 0, 'detections': 0, 'used': 0, 'low_confidence': 0,
                       'bad_depth': 0, 'tf_failed': 0}
@@ -138,13 +151,14 @@ class SurvivorLocalizer(Node):
 
     def _on_pair(self, detections, depth_msg):
         self.stats['pairs'] += 1
-        if self._k is None or not detections.detections:
+        if self._k is None:
             return
         fx, fy, cx, cy = self._k
         depth = depth_to_array(depth_msg)
         stamp = detections.header.stamp
         cam_to_map = self._lookup(self._g('map_frame'), depth_msg.header.frame_id, stamp)
         base_in_map = self._lookup(self._g('map_frame'), self._g('base_frame'), stamp)
+        changed = self._count_views(depth, cam_to_map)   # every frame, with or without detections
         for d in detections.detections:
             self.stats['detections'] += 1
             score = d.results[0].hypothesis.score if d.results else 0.0
@@ -176,10 +190,34 @@ class SurvivorLocalizer(Node):
         now = stamp.sec + stamp.nanosec * 1e-9
         for t in self.tracker.expire(now):
             self.get_logger().info(f'candidate {t.id} expired after {t.hits} hit(s)')
-        self._publish(detections.header.stamp)
+        if detections.detections or changed:
+            self._publish(detections.header.stamp)
+
+    def _count_views(self, depth, cam_to_map):
+        """Count one view for every track whose point the camera could see in this frame.
+
+        Returns True when a track changed state because of it (a demotion or confirmation).
+        """
+        changed = False
+        if cam_to_map is None or not self.tracker.tracks:
+            return changed
+        fx, fy, cx, cy = self._k
+        for t in self.tracker.tracks:
+            p = inverse_transform_point(*cam_to_map, (t.x, t.y, t.z))
+            if point_visible(p, depth, fx, fy, cx, cy, self._g('min_range_m'),
+                             self._g('max_range_m'), occlusion_tol=self._g('occlusion_tolerance_m')):
+                before = t.state
+                self.tracker.count_view(t)
+                if before != t.state:
+                    changed = True
+                    self.get_logger().info(
+                        f'track {t.id} {t.state} at ({t.x:.2f}, {t.y:.2f}): hit rate '
+                        f'{t.hit_rate:.2f} ({t.hits} hits in {t.in_view} views)')
+        return changed
 
     def _publish(self, stamp):
-        msg, markers = survivor_messages(self.tracker.tracks, stamp, self._g('map_frame'))
+        msg, markers = survivor_messages(self.tracker.tracks, stamp, self._g('map_frame'),
+                                         self.tracker.suppressed())
         self._pub.publish(msg)
         self._marker_pub.publish(markers)
 

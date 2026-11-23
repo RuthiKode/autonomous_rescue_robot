@@ -83,11 +83,21 @@ def main(argv=None):
                              ' detection result); none: explore only')
     parser.add_argument('--model', default='',
                         help='weights file for --detector yolo (default: perception.yaml)')
+    parser.add_argument('--min-hit-rate', default='',
+                        help='localizer min_hit_rate override (default: perception.yaml)')
+    parser.add_argument('--min-confidence', default='',
+                        help='localizer min_confidence override (default: perception.yaml)')
     parser.add_argument('--explore-params', default=None,
                         help='explore_lite parameter file to use instead of the project default')
+    parser.add_argument('--worlds-dir', default=None,
+                        help='generated worlds to use instead of the installed ones')
+    parser.add_argument('--collect-frames', default=None, metavar='DIR',
+                        help='dataset collection: add the segmentation camera and save labelled'
+                             ' frames to DIR while exploring (not for evaluation runs)')
     parser.add_argument('--output-dir', default=None)
     parser.add_argument('--config', default=os.path.join(share, 'config', 'eval.yaml'))
     args = parser.parse_args(argv)
+    worlds = os.path.abspath(args.worlds_dir) if args.worlds_dir else os.path.join(sim_share, 'worlds')
 
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
@@ -95,10 +105,10 @@ def main(argv=None):
     limit = args.time_limit if args.time_limit is not None else float(ecfg['time_limit_s'])
     out_dir = os.path.abspath(args.output_dir or cfg['output_dir'])
 
-    with open(os.path.join(sim_share, 'worlds', args.world + '_survivors.yaml')) as f:
+    with open(os.path.join(worlds, args.world + '_survivors.yaml')) as f:
         truth = yaml.safe_load(f)
     spawn = (truth['robot_spawn']['x'], truth['robot_spawn']['y'], truth['robot_spawn']['yaw'])
-    truth_map = map_score.load_map(os.path.join(sim_share, 'worlds', args.world + '_truth_map.yaml'))
+    truth_map = map_score.load_map(os.path.join(worlds, args.world + '_truth_map.yaml'))
     mask = reachable_truth_mask(truth_map, spawn, float(ecfg['robot_radius_m']))
     true_pos = [(s['position']['x'], s['position']['y']) for s in truth['survivors']]
 
@@ -112,7 +122,13 @@ def main(argv=None):
     log_path = os.path.join(run_dir, 'launch.log')
     print(f'[explore_eval] {run_id}: launching (log: {log_path})', flush=True)
 
-    sim = launch_sim(args.world, args.seed, log_path, launch_file='mapping.launch.py')
+    sim_extra = []
+    if args.worlds_dir:
+        sim_extra.append(f'worlds_dir:={worlds}')
+    if args.collect_frames:
+        sim_extra.append('seg_camera:=true')
+    sim = launch_sim(args.world, args.seed, log_path, launch_file='mapping.launch.py',
+                     extra_args=sim_extra)
     rclpy.init()
     node = ExploreEvalNode(spawn, float(cfg['slam']['trajectory_rate_hz']),
                            float(cfg['slam']['tf_wait_s']), truth_map, mask)
@@ -164,9 +180,18 @@ def main(argv=None):
                                           'perception.launch.py', f'detector:={args.detector}',
                                           f'world:={args.world}']
                                          + ([f'model:={os.path.abspath(args.model)}']
-                                            if args.model else []), log_path))
+                                            if args.model else [])
+                                         + ([f'min_hit_rate:={args.min_hit_rate}']
+                                            if args.min_hit_rate else [])
+                                         + ([f'min_confidence:={args.min_confidence}']
+                                            if args.min_confidence else []), log_path))
                     time.sleep(float(ecfg['perception_warmup_s'])
                                if args.detector == 'yolo' else 5.0)
+                if args.collect_frames:
+                    procs.append(Process(
+                        ['ros2', 'run', 'rescue_perception', 'frame_logger', '--ros-args',
+                         '-p', f'out_dir:={os.path.abspath(args.collect_frames)}',
+                         '-p', f'tag:={run_id}', '-p', 'use_sim_time:=true'], log_path))
                 explore_cmd = ['ros2', 'launch', 'rescue_exploration', 'explore_baseline.launch.py']
                 if args.explore_params:
                     explore_cmd.append(f'params_file:={os.path.abspath(args.explore_params)}')

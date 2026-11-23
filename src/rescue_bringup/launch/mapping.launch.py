@@ -16,9 +16,9 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
     bringup = get_package_share_directory('rescue_bringup')
     slam = get_package_share_directory('rescue_slam')
-    names = ['world', 'headless', 'seed', 'rviz', 'rviz_config']
+    names = ['world', 'headless', 'seed', 'rviz', 'rviz_config', 'seg_camera', 'worlds_dir']
     defaults = {'world': 'rooms', 'headless': 'false', 'seed': '0', 'rviz': 'false',
-                'rviz_config': 'phase2.rviz'}
+                'rviz_config': 'phase2.rviz', 'seg_camera': 'false', 'worlds_dir': ''}
     sim_args = {name: LaunchConfiguration(name) for name in names}
     # The EKF must run, and the static map -> odom stand-in must not: SLAM owns that transform.
     sim_args.update({'ekf': 'true', 'static_map_tf': 'false'})

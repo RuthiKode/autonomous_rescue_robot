@@ -55,16 +55,17 @@ def detector_table():
 
 def run_table(root, label):
     print(f'\nPipeline runs: {label} ({root}/runs.csv)')
-    print('| world | seed | coverage | true survivors pinned | confirmed pins | pin precision | '
-          'duplicates | pin error (m) | RTF |')
-    print('|---|---|---|---|---|---|---|---|---|')
+    print('| method | world | seed | status | coverage | true survivors pinned | confirmed pins | '
+          'pin precision | duplicates | pin error (m) | RTF |')
+    print('|---|---|---|---|---|---|---|---|---|---|---|')
     for r in csv.DictReader(open(f'{root}/runs.csv')):
         n = int(r['n_true_survivors'])
         rec = float(r['det_recall']) if r['det_recall'] not in ('', 'nan') else float('nan')
         pinned = round(rec * n) if rec == rec else 'n/a'
         prec = float(r['det_precision']) if r['det_precision'] not in ('', 'nan') else float('nan')
         total = round(pinned / prec) if prec == prec and prec > 0 and pinned != 'n/a' else 'n/a'
-        print(f"| {r['world']} | {r['seed']} | {f(r['coverage'], 3)} | {pinned} of {n} | {total} | "
+        print(f"| {r['method']} | {r['world']} | {r['seed']} | {r['status']} | "
+              f"{f(r['coverage'], 3)} | {pinned} of {n} | {total} | "
               f"{f(prec)} | {f(r['duplicate_rate'])} | {f(r['pin_error_m'])} | "
               f"{f(r['real_time_factor'])} |")
 
@@ -73,5 +74,7 @@ if __name__ == '__main__':
     detector_table()
     for root, label in (('results/phase5', 'round 1 detectors, leave-one-layout-out'),
                         ('results/phase5r2', 'round 2 detectors, leave-one-layout-out'),
-                        ('results/phase5all', 'all-layouts detector (world seed 42 unseen)')):
+                        ('results/phase5all', 'all-layouts detector (world seed 42 unseen)'),
+                        ('results/phase5x', 'round 4 detector (exploration frames), rule off / hit-rate'),
+                        ('results/phase5y', 'round 4 detector + final pin rule')):
         run_table(root, label)

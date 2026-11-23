@@ -39,8 +39,13 @@ def _setup(context):
                             parameters=[config, {'truth_file': truth}, sim_time]))
     elif detector != 'none':
         raise RuntimeError(f"detector must be yolo, oracle or none, not '{detector}'")
+    overrides = {}
+    for name in ('min_hit_rate', 'min_confidence'):
+        value = LaunchConfiguration(name).perform(context)
+        if value:
+            overrides[name] = float(value)
     actions.append(Node(package='rescue_perception', executable='survivor_localizer',
-                        output='screen', parameters=[config, sim_time]))
+                        output='screen', parameters=[config, overrides, sim_time]))
     return actions
 
 
@@ -51,6 +56,10 @@ def generate_launch_description():
                               description='only used by detector:=oracle'),
         DeclareLaunchArgument('model', default_value='',
                               description='weights file for detector:=yolo (default: perception.yaml)'),
+        DeclareLaunchArgument('min_hit_rate', default_value='',
+                              description='localizer override (default: perception.yaml)'),
+        DeclareLaunchArgument('min_confidence', default_value='',
+                              description='localizer override (default: perception.yaml)'),
         DeclareLaunchArgument('venv_python',
                               default_value=os.path.expanduser('~/venvs/yolo/bin/python')),
         OpaqueFunction(function=_setup),

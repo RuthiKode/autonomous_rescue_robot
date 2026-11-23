@@ -2,10 +2,13 @@
 
 Plan gate for week 6: *held-out precision and recall table; one pin per survivor in 5 runs.*
 
-**Status: the detector gate is met, the pin gate is only half met.** Every true survivor got a pin in 17 of
-18 pipeline runs, but the pipeline also confirms many false pins (5 to 44 confirmed pins per run for 3 or 4
-survivors; pin precision 0.07 to 0.27).
-Details and a proposed fix are at the end; I stopped here for your decision.
+**Status: the detector gate is met; the pin gate is met for recall and duplicates, not yet for precision.**
+The first fine-tuned detector pinned every survivor but also confirmed 5 to 44 pins per run for 3 or 4
+survivors (precision 0.07 to 0.27). "Round 4" (section below) mined hard negatives from exploration frames and
+tightened the pin rule: on the committed worlds the pipeline now confirms 3 to 7 pins per run (mean precision
+0.74, every survivor pinned, no duplicates), and on two generated worlds the detector had never seen, 19 of 25
+survivors were pinned (19 of 20 when the one run whose exploration stalled is left out) with mean precision
+0.84. Extra false pins remain in most runs, so a verification step is still needed.
 
 ## What was built
 - **Labels without hand work.** `rescue_simulation` survivor models carry a Gazebo semantic label
@@ -117,12 +120,84 @@ Camera 15 Hz. Across all 18 runs the detector skipped 0 frames at its rate cap; 
 were 0.88 to 0.89); the lowest values came in the later runs of the session, which I did not investigate.
 `scripts/detector_throughput.sh` lists every run.
 
+## Round 4: fixing the false pins
+
+Three changes, in the order they were tried. Tables: `docs/img/phase5/tables.md`.
+
+**1. Hard negatives from exploration frames.** `explore_eval --collect-frames DIR` starts the segmentation
+camera and `frame_logger` (one labelled frame per sim second) while the robot explores. `scripts/collect_explore.sh`
+did this in generated worlds with seeds 11, 12 and 13 (3 layouts each, 4,101 frames); seeds 11 and 12 train,
+seed 13 validates. `train_detector.py train --holdout all --explore --mine WEIGHTS` adds the frames and repeats
+every frame on which the previous detector fired without a label (1,136 of 2,921) twice more. Result on the
+exploration frames of the unseen seed-13 worlds (1,180 frames, 352 labelled boxes):
+
+| detector | frames with a false positive | false boxes | recall |
+|---|---|---|---|
+| round 3 (teleport frames only) | 441 (37.4 %) | 475 | 0.87 |
+| round 4 (+ exploration frames, mined) | 11 (0.9 %) | 11 | 0.97 |
+
+So the earlier teleport test did hide the problem: along real exploration paths the old detector fired falsely in
+more than a third of the frames. On the teleport test frames the new detector scores 0.92 / 0.96 (P / R) against
+0.95 / 0.98 before, which I read as a distribution effect, not a regression. Training here uses the
+exploration worlds, which differ from the committed worlds the runs below use.
+
+**2. Hit-rate rule (tested, left off).** The localizer counts, for every track, the frames in which its point
+was visible to the camera (inside the field of view and range, no nearer surface in the depth image) and can
+require hits / views >= `min_hit_rate`. With 0.25 over 5 runs the pin precision was 0.38 to 0.75 and the
+duplicate rate went up (0.22 to 0.38 against 0.00 to 0.20 without it), so there is no clear gain; the code and
+tests stay, the parameter is 0 (off). One run of that batch failed at start-up (`startup_timeout`, a simulator
+start-up flake, not a result).
+
+**3. Pin rule: more hits, a confidence floor, and merging.** `scripts/confirm_sweep.py` replays the rule offline
+on the final track sets of the six no-rule runs (the scorer only sees the final tracks, and tracks form the
+same way whatever the thresholds). Keeping confirmed tracks with hits >= 20 and mean confidence >= 0.6, and
+reporting only the strongest track within 1.5 m of another, raised mean pin precision from 0.51 to 0.73 with
+recall 1.00 and no duplicates (hits >= 80 lost a survivor in one of six runs). The localizer now uses
+`confirm_hits: 20`, `confirm_confidence: 0.6`, `merge_radius_m: 1.5` (`perception.yaml`); merged tracks are
+published with state `merged` and do not count as pins. The thresholds were picked on those six runs, so the
+committed-world results below are not independent of the choice; the unseen worlds are.
+
+### Pipeline runs with the round-4 detector and the final rule
+
+Committed worlds, 2 Gazebo seeds per world:
+
+| world | seed | coverage | survivors pinned | confirmed pins | pin precision | duplicates | pin error (m) |
+|---|---|---|---|---|---|---|---|
+| collapsed | 1 | 0.967 | 4 of 4 | 6 | 0.67 | 0.00 | 0.55 |
+| rooms | 1 | 0.912 | 3 of 3 | 3 | 1.00 | 0.00 | 0.31 |
+| open_plan | 1 | 0.998 | 3 of 3 | 5 | 0.60 | 0.00 | 0.12 |
+| collapsed | 2 | 0.984 | 4 of 4 | 7 | 0.57 | 0.00 | 0.34 |
+| rooms | 2 | 0.905 | 3 of 3 | 3 | 1.00 | 0.00 | 0.37 |
+| open_plan | 2 | 0.999 | 3 of 3 | 5 | 0.60 | 0.00 | 0.19 |
+
+Generated worlds with seeds 21 and 22 (never used for training, mining or choosing the rule), 1 Gazebo seed:
+
+| world | coverage | survivors pinned | confirmed pins | pin precision | duplicates | pin error (m) |
+|---|---|---|---|---|---|---|
+| collapsed, world 21 | 0.965 | 3 of 4 | 3 | 1.00 | 0.00 | 0.41 |
+| rooms, world 21 | 0.551 | 0 of 5 | 0 | n/a | n/a | n/a |
+| open_plan, world 21 | 1.000 | 3 of 3 | 4 | 0.75 | 0.00 | 0.30 |
+| collapsed, world 22 | 0.980 | 3 of 3 | 4 | 0.75 | 0.00 | 0.24 |
+| rooms, world 22 | 0.944 | 5 of 5 | 5 | 1.00 | 0.00 | 0.39 |
+| open_plan, world 22 | 1.000 | 5 of 5 | 7 | 0.71 | 0.00 | 0.29 |
+
+Against the first fine-tuned detector in the same committed worlds (23 to 44 confirmed pins, precision 0.07 to
+0.13), the pin set is about a seventh the size. Rooms world 21 is an exploration failure (coverage 0.551, the
+run stopped on its plateau rule), not a detection failure; I did not diagnose it (the rooms SLAM pose jump
+is a candidate). Collapsed world 21 missed one survivor; I did not check why. Remaining false pins sit on
+obstacles; I did not examine them after the rule change.
+
+Throughput in these runs: no skipped frames; real-time factor 0.31 to 0.91, lower than the 0.85 to 0.90 of
+the earlier batches (the lowest was rooms world 21). I did not find the cause; the session was interrupted once
+(WSL restarted) during this batch, and the five runs after it were resumed with the same settings
+(`scripts/phase5y_resume.sh`).
+
 ## Gate check
 | gate item | result |
 |---|---|
-| Held-out precision and recall table | done (above); collapsed precision 0.56 to 0.68 is the weak point |
-| Sustained inference at the camera rate | met: 0 skipped frames in 18 runs |
-| One pin per survivor in 5 runs | **not met as stated**: every survivor is pinned in 17 of 18 runs (the exception is round-2 rooms seed 1), duplicates are rare (0.00 to 0.10), but 5 to 44 pins are confirmed per run for 3 or 4 survivors |
+| Held-out precision and recall table | done (above); collapsed precision 0.56 to 0.68 on teleport frames was the weak point |
+| Sustained inference at the camera rate | met: 0 skipped frames in all runs |
+| One pin per survivor in 5 runs | **met for recall and duplicates**: with the round-4 detector and rule, 10 of 12 runs pin every survivor with 0 duplicates (the other two: world 21 collapsed, 1 of 4 missed; world 21 rooms, exploration stalled, 0 of 5). **Not met for precision**: 7 of 11 runs with pins still confirm 1 to 3 extra pins (precision 0.57 to 0.75) |
 
 ## Deviations and decisions
 1. Boxes come from a segmentation camera as the plan says, but frames use teleported poses rather than driving
@@ -134,17 +209,19 @@ were 0.88 to 0.89); the lowest values came in the later runs of the session, whi
 5. Ultralytics is AGPL-3.0, as noted in the plan, so check the licence before publishing.
 
 ## Known issues
-- False pins as described; the pipeline currently reports an unusable pin set although recall is perfect.
+- 1 to 3 extra pins remain in most runs (obstacle look-alikes); pin precision 0.57 to 1.00.
+- Rooms exploration is unreliable in some worlds (coverage 0.551 in world 21, 0.547 in one earlier run); the
+  pipeline cannot pin what the robot never sees. Not diagnosed.
+- Real-time factor dropped in the later batches (0.31 to 0.91); cause not found.
 - Sim-to-real gap: the worlds are flat-shaded low-poly scenes; nothing here says how the detector behaves on real
   images. Report it as a limitation.
-- Single training run per fold (seed 0); the numbers carry no spread.
-- Test frames are my sampled poses, not exploration views.
+- Single training run per detector (seed 0), 1 to 2 runs per condition; the numbers carry no spread.
+- The pin rule's thresholds were chosen on the committed worlds' earlier runs (see round 4).
+- The leave-one-layout-out detectors were not retrained with exploration frames, so the cross-layout
+  generalization numbers above are for the first (teleport-only) detectors.
 
 ## Decision for you
-Fix the false pins before week 7? My recommendation: yes, in two steps that stay inside this week's work:
-1. **Mine hard negatives from exploration runs.** Run the segmentation camera during explore_eval, label frames
-   along the real exploration path, add the frames where the detector fires without a label, retrain. This also
-   makes the held-out frame test match what the pipeline sees.
-2. **Confirm by hit rate in the localizer** (needs a per-track "in view" count), tuned on these bags.
-Expect about half a day. The alternative is to leave it and rely on the week-8 Verify branch, but verifying 30
-to 40 pins per run would dominate mission time.
+Move on to week 7 (own frontier selector, behaviour tree)? My recommendation: yes. The pin set is small enough
+(3 to 7 pins for 3 to 5 survivors) for the week-8 Verify branch to handle the remaining extras by taking a
+second look at each pin. Two things I would watch: the rooms exploration stalls (they will also affect the
+week-7 coverage curves) and the real-time factor drop.
