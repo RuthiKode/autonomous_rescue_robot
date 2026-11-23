@@ -18,6 +18,8 @@ that its /cmd_vel traffic could disturb.
 import argparse
 import csv
 import datetime
+import json
+import math
 import os
 import subprocess
 import sys
@@ -25,13 +27,15 @@ import time
 
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Twist
+import numpy as np
 from nav_msgs.msg import OccupancyGrid
 import rclpy
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
-from rescue_msgs.msg import SurvivorArray
+from rescue_msgs.msg import MissionState, SurvivorArray
 import yaml
 
-from rescue_eval import map_score, trajectory
+from rescue_eval import inject as inject_mod, map_score, trajectory
+from rescue_eval.driving import pose2d
 from rescue_eval.coverage import coverage, grid_to_map, reachable_truth_mask, time_to
 from rescue_eval.metrics import append_row, placeholder_metrics
 from rescue_eval.run_eval import _bag_summary, _wait_nav_active, EvalNode
@@ -50,8 +54,21 @@ class ExploreEvalNode(EvalNode):
         self._truth_map, self._mask = truth_map, mask
         self.curve = []                       # [(sim time, coverage)]
         self.survivors = None
+        self.mission = None                   # (state, reason, sim time) of the latest /mission/state
+        self.mission_counts = {}              # goals, failures, recoveries, verifications so far
+        self.truth_pose = None                # latest true (x, y, yaw) in the world frame
         self.create_subscription(OccupancyGrid, '/map', self._on_map, LATCHED)
         self.create_subscription(SurvivorArray, '/survivors', self._on_survivors, LATCHED)
+        self.create_subscription(MissionState, '/mission/state', self._on_mission, 10)
+
+    def _on_truth(self, msg):
+        super()._on_truth(msg)
+        self.truth_pose = pose2d(msg)
+
+    def _on_mission(self, msg):
+        self.mission = (msg.state, msg.reason, self.sim_time)
+        self.mission_counts = {'goals_sent': msg.goals_sent, 'goals_failed': msg.goals_failed,
+                               'recoveries': msg.recoveries, 'verifications': msg.verifications}
 
     def _on_map(self, msg):
         if self.sim_time is None:
@@ -61,6 +78,33 @@ class ExploreEvalNode(EvalNode):
 
     def _on_survivors(self, msg):
         self.survivors = msg
+
+
+def injection_outcome(injection, kind, log, rel_curve, mission, counts):
+    """Did the mission recover from the scripted failure?
+
+    recovered = the mission did not end FAILED, and it either ended DONE or reached coverage 0.85,
+    and (teleport only) the SLAM pose is back within 0.5 m of the truth at the end of the run.
+    The pose error is the mean over the last 20 sim seconds; peak = the largest error after the
+    injection. Everything used is returned so the table can show why a run passed or failed.
+    """
+    start = int(injection.get('log_index', 0))
+    errs = [math.hypot(e[0] - t[0], e[1] - t[1]) for e, t in zip(log.est[start:], log.truth[start:])]
+    final_err = float(np.mean(errs[-200:])) if errs else float('nan')    # 10 Hz: 20 s
+    peak_err = float(np.max(errs)) if errs else float('nan')
+    state = mission[0] if mission else 'none'
+    cov_after = rel_curve[-1][1] if rel_curve else float('nan')
+    before = injection['counts_before']
+    goals_after = counts.get('goals_sent', 0) - before.get('goals_sent', 0)
+    recoveries_after = counts.get('recoveries', 0) - before.get('recoveries', 0)
+    ok_mission = state != 'FAILED' and (state == 'DONE' or cov_after >= 0.85)
+    ok_pose = kind != 'teleport' or (final_err == final_err and final_err <= 0.5)
+    verdict = (f'mission {state}, coverage {cov_after:.2f}, {goals_after} goals and {recoveries_after}'
+               f' recoveries after, pose error {final_err:.2f} m (peak {peak_err:.2f} m)')
+    return {'mission_state': state, 'coverage_after': cov_after, 'goals_after': goals_after,
+            'recoveries_after': recoveries_after, 'pose_error_final_m': final_err,
+            'pose_error_peak_m': peak_err, 'recovered': bool(ok_mission and ok_pose),
+            'verdict': verdict}
 
 
 def plateaued(curve, now, window_s, min_gain):
@@ -78,11 +122,28 @@ def main(argv=None):
     parser.add_argument('--method', default=None,
                         help='label in the CSV (default: explore_<detector>)')
     parser.add_argument('--time-limit', type=float, default=None, help='sim seconds')
+    parser.add_argument('--no-plateau', action='store_true',
+                        help='do not stop on a coverage plateau: only on the time limit or when'
+                             ' the mission tree reports DONE or FAILED (completion-time runs)')
     parser.add_argument('--detector', choices=['yolo', 'oracle', 'none'], default='yolo',
                         help='yolo: pretrained YOLO; oracle: ground-truth TEST DOUBLE (never a'
                              ' detection result); none: explore only')
     parser.add_argument('--model', default='',
                         help='weights file for --detector yolo (default: perception.yaml)')
+    parser.add_argument('--explorer', choices=['lite', 'own', 'random'], default='lite',
+                        help='lite: explore_lite baseline; own: frontier selector + mission tree;'
+                             ' random: the same tree with random reachable goals (lower bound)')
+    parser.add_argument('--verify', action='store_true',
+                        help='own/random only: drive to pins for a close look; pins are then'
+                             ' scored as verified (see --score-pins)')
+    parser.add_argument('--score-pins', choices=['confirmed', 'verified'], default=None,
+                        help="which pins count: 'confirmed' = confirmed + verified (default),"
+                             " 'verified' = verified only (default with --verify)")
+    parser.add_argument('--inject', choices=['none', 'block', 'teleport'], default='none',
+                        help='scripted failure: a wall appears ahead of the robot, or the robot is'
+                             ' moved to another reachable spot (recovery tests)')
+    parser.add_argument('--inject-at', type=float, default=90.0,
+                        help='sim seconds after the start of exploring at which to inject')
     parser.add_argument('--min-hit-rate', default='',
                         help='localizer min_hit_rate override (default: perception.yaml)')
     parser.add_argument('--min-confidence', default='',
@@ -137,6 +198,7 @@ def main(argv=None):
     status, map_yaml = 'ok', ''
     t0 = sim_elapsed = wall_elapsed = 0.0
     stop_reason = ''
+    injection = {}
     try:
         result = spin_until(node, lambda: node.sim_time is not None and node.sim_time > 1.0
                             and node.truth_seen, float(cfg['startup_timeout_s']), sim.alive)
@@ -184,7 +246,9 @@ def main(argv=None):
                                          + ([f'min_hit_rate:={args.min_hit_rate}']
                                             if args.min_hit_rate else [])
                                          + ([f'min_confidence:={args.min_confidence}']
-                                            if args.min_confidence else []), log_path))
+                                            if args.min_confidence else [])
+                                         + (['verification:=true'] if args.verify else []),
+                                         log_path))
                     time.sleep(float(ecfg['perception_warmup_s'])
                                if args.detector == 'yolo' else 5.0)
                 if args.collect_frames:
@@ -193,7 +257,11 @@ def main(argv=None):
                          '-p', f'out_dir:={os.path.abspath(args.collect_frames)}',
                          '-p', f'tag:={run_id}', '-p', 'use_sim_time:=true'], log_path))
                 explore_cmd = ['ros2', 'launch', 'rescue_exploration', 'explore_baseline.launch.py']
-                if args.explore_params:
+                if args.explorer in ('own', 'random'):
+                    explore_cmd = ['ros2', 'launch', 'rescue_mission', 'mission.launch.py',
+                                   f'verify:={"true" if args.verify else "false"}',
+                                   f'selector_mode:={"random" if args.explorer == "random" else "score"}']
+                elif args.explore_params:
                     explore_cmd.append(f'params_file:={os.path.abspath(args.explore_params)}')
                 procs.append(Process(explore_cmd, log_path))
                 node.logging = True
@@ -201,18 +269,42 @@ def main(argv=None):
                 print(f'[explore_eval] exploring (limit {limit:.0f} sim s)', flush=True)
                 next_report = [t0 + 60.0]
 
+                def inject_now():
+                    """Do the scripted failure once, `inject_at` sim seconds into exploring."""
+                    rng = np.random.default_rng(1000 + args.seed)
+                    here = node.truth_pose or spawn
+                    before = node.curve[-1][1] if node.curve else 0.0
+                    if args.inject == 'block':
+                        x, y, yaw = inject_mod.block_pose_ahead(here)
+                        ok = inject_mod.create_block(args.world, x, y, yaw)
+                        what = f'wall at ({x:.2f}, {y:.2f}) ahead of the robot'
+                    else:
+                        x, y, yaw = inject_mod.pick_teleport_target(
+                            mask, truth_map['resolution'], truth_map['origin'], here[:2], rng)
+                        ok = inject_mod.teleport(args.world, x, y, yaw)
+                        what = f'robot moved from ({here[0]:.1f}, {here[1]:.1f}) to ({x:.1f}, {y:.1f})'
+                    injection.update({'kind': args.inject, 'at_sim_s': node.sim_time - t0,
+                                      'ok': bool(ok), 'what': what, 'coverage_before': before,
+                                      'counts_before': dict(node.mission_counts),
+                                      'log_index': len(node.log)})
+                    print(f'[explore_eval] injected {args.inject}: {what} (ok={ok})', flush=True)
+
                 def finished():
                     nonlocal stop_reason
                     node.process_pending()
                     t = node.sim_time - t0
+                    if args.inject != 'none' and not injection and t >= args.inject_at:
+                        inject_now()
                     if node.sim_time >= next_report[0] and node.curve:
                         next_report[0] += 60.0
                         pins = len(node.survivors.survivors) if node.survivors else 0
                         print(f'[explore_eval] t={t:5.0f}s coverage {node.curve[-1][1]:.3f}'
                               f' pins {pins}', flush=True)
-                    if t >= limit:
+                    if node.mission and node.mission[0] in ('DONE', 'FAILED'):
+                        stop_reason = f'mission {node.mission[0]}: {node.mission[1]}'
+                    elif t >= limit:
                         stop_reason = 'time limit'
-                    elif t >= float(ecfg['min_time_s']) and plateaued(
+                    elif not args.no_plateau and t >= float(ecfg['min_time_s']) and plateaued(
                             node.curve, node.sim_time, float(ecfg['plateau_window_s']),
                             float(ecfg['plateau_gain'])):
                         stop_reason = 'coverage plateau'
@@ -249,14 +341,20 @@ def main(argv=None):
             bag.stop(float(cfg['shutdown_timeout_s']))
         sim.stop(float(cfg['shutdown_timeout_s']))
         log, curve, survivors = node.log, list(node.curve), node.survivors
+        mission, mission_t0, mission_counts = node.mission, t0, dict(node.mission_counts)
         node.destroy_node()
         rclpy.try_shutdown()
 
     messages, topics_with_data = _bag_summary(bag_dir)
-    pins = [(s.pose.position.x, s.pose.position.y) for s in survivors.survivors
-            if s.state == 'confirmed'] if survivors else []
-    candidates = [(s.pose.position.x, s.pose.position.y) for s in survivors.survivors
-                  if s.state != 'confirmed'] if survivors else []
+    # Which tracks count as pins: confirmed + verified, or (the default with --verify) verified
+    # only. Merged and rejected tracks never count.
+    score_state = args.score_pins or ('verified' if args.verify else 'confirmed')
+    counted = ('verified',) if score_state == 'verified' else ('confirmed', 'verified')
+    tracks = survivors.survivors if survivors else []
+    pins = [(s.pose.position.x, s.pose.position.y) for s in tracks if s.state in counted]
+    candidates = [(s.pose.position.x, s.pose.position.y) for s in tracks if s.state == 'candidate']
+    state_counts = {st: sum(s.state == st for s in tracks)
+                    for st in ('candidate', 'confirmed', 'verified', 'rejected', 'merged')}
     row = {
         'run_id': run_id, 'timestamp_utc': now.isoformat(timespec='seconds'),
         'world': args.world, 'method': args.method, 'seed': args.seed, 'status': status,
@@ -267,6 +365,11 @@ def main(argv=None):
         'map_path': os.path.relpath(map_yaml, out_dir) if map_yaml else '',
     }
     row.update(placeholder_metrics())
+    if args.explorer in ('own', 'random') and mission:
+        row['mission_completed'] = int(mission[0] == 'DONE')
+        if mission[0] in ('DONE', 'FAILED') and mission[2] is not None:
+            row['mission_time_s'] = f'{mission[2] - mission_t0:.1f}'
+        row['recoveries'] = mission_counts.get('recoveries', 0)
 
     rel = [(t - curve[0][0], c) for t, c in curve] if curve else []
     if rel:
@@ -280,16 +383,17 @@ def main(argv=None):
               f" 90% at {row['time_to_90_coverage_s']} s; stopped: {stop_reason or status}")
     with open(os.path.join(run_dir, 'survivors.csv'), 'w', newline='') as f:
         w = csv.writer(f)
-        w.writerow(['state', 'x', 'y'])
-        w.writerows([('confirmed', f'{x:.3f}', f'{y:.3f}') for x, y in pins]
-                    + [('candidate', f'{x:.3f}', f'{y:.3f}') for x, y in candidates])
+        w.writerow(['state', 'x', 'y', 'hits', 'confidence'])
+        w.writerows((s.state, f'{s.pose.position.x:.3f}', f'{s.pose.position.y:.3f}',
+                     s.hit_count, f'{s.confidence:.3f}') for s in tracks)
     if args.detector != 'none':
         s = score_pins(pins, true_pos)
         row['det_precision'] = f"{s['precision']:.4f}"
         row['det_recall'] = f"{s['recall']:.4f}"
         row['duplicate_rate'] = f"{s['duplicate_rate']:.4f}"
         row['pin_error_m'] = f"{s['pin_error_m']:.4f}"
-        print(f"[explore_eval] pins: {s['pins']} confirmed ({len(candidates)} candidates left),"
+        print(f"[explore_eval] tracks: {state_counts}; counted as pins: {score_state}")
+        print(f"[explore_eval] pins: {s['pins']} counted ({len(candidates)} candidates left),"
               f" {s['matched']} of {s['truth']} true survivors matched, precision"
               f" {s['precision']:.2f}, recall {s['recall']:.2f}, duplicates {s['duplicate_rate']:.2f},"
               f" pin error {s['pin_error_m']:.2f} m")
@@ -307,6 +411,15 @@ def main(argv=None):
         print(f"[explore_eval] trajectory: ATE RMSE {a['rmse']:.3f} m over {a['n']} poses")
     except ImportError:
         print('[explore_eval] evo is not installed; trajectory error left as nan')
+    except Exception as exc:                      # e.g. a robot that never moved: no alignment
+        print(f'[explore_eval] trajectory error not computed: {exc}')
+
+    if injection:
+        injection.update(injection_outcome(injection, args.inject, log, rel, mission, mission_counts))
+        with open(os.path.join(run_dir, 'injection.json'), 'w') as f:
+            json.dump(injection, f, indent=1)
+        print(f"[explore_eval] injection {args.inject}: recovered={injection['recovered']}"
+              f" ({injection['verdict']})")
 
     append_row(os.path.join(out_dir, cfg['csv_name']), row)
     print(f'[explore_eval] status={status}; row appended to {os.path.join(out_dir, cfg["csv_name"])}')

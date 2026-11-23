@@ -24,6 +24,10 @@
   <exec_depend>rescue_simulation</exec_depend>
   <exec_depend>rescue_slam</exec_depend>
   <exec_depend>rescue_navigation</exec_depend>
+  <exec_depend>rescue_perception</exec_depend>
+  <exec_depend>rescue_exploration</exec_depend>
+  <exec_depend>rescue_mission</exec_depend>
+  <!-- foxglove_bridge is only needed for foxglove:=true (sudo apt install ros-jazzy-foxglove-bridge) -->
   <exec_depend>teleop_twist_keyboard</exec_depend>
   <exec_depend>tf2_tools</exec_depend>
 

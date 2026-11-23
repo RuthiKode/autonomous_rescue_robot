@@ -95,3 +95,47 @@ def test_merge_keeps_only_the_strongest_track():
     gone = t.suppressed()
     assert len(gone) == 1
     assert next(x for x in t.tracks if x.id in gone).x == pytest.approx(1.2, abs=0.01)
+
+
+def _close_track(t, hits, views, range_m=2.0):
+    """A track with `views` close-range frames of which `hits` carry a detection."""
+    track = t.update(3.0, 2.0, 0.5, 0.8, 100.0, (0.0, 0.0), range_m=6.0)
+    for i in range(views):
+        t.count_view(track, range_m)
+        if i < hits:
+            t.update(3.0, 2.0, 0.5, 0.8, 101.0 + i, (float(i % 2), 0.0), range_m=range_m)
+    return track
+
+
+def test_close_views_with_most_frames_detected_verify():
+    from rescue_perception.tracker import VERIFIED
+    t = Tracker(confirm_hits=5, confirm_views=2, view_separation=0.5, verification=True)
+    track = _close_track(t, hits=14, views=16)
+    assert track.state == VERIFIED
+    assert track in t.confirmed()                  # verified tracks still count as pins
+
+
+def test_close_views_with_almost_no_detections_reject():
+    from rescue_perception.tracker import REJECTED
+    t = Tracker(confirm_hits=3, confirm_views=1, verification=True)
+    track = t.update(3.0, 2.0, 0.5, 0.8, 100.0, (0.0, 0.0), range_m=6.0)
+    for i in range(4):                             # confirmed from far away
+        t.update(3.0, 2.0, 0.5, 0.8, 101.0 + i, (0.0, 0.0), range_m=6.0)
+    assert track.state == CONFIRMED
+    for _ in range(20):                            # nothing there when seen from close
+        t.count_view(track, 1.8)
+    assert track.state == REJECTED and track not in t.confirmed()
+    for i in range(30):                            # rejected is final
+        t.update(3.0, 2.0, 0.5, 0.9, 200.0 + i, (float(i % 2), 0.0), range_m=6.0)
+    assert track.state == REJECTED
+
+
+def test_far_views_never_verify_or_reject_and_the_rule_can_be_off():
+    t = Tracker(confirm_hits=3, confirm_views=1, verification=True)
+    track = _close_track(t, hits=0, views=0)
+    for _ in range(50):
+        t.count_view(track, 5.0)                   # beyond close_range
+    assert track.close_views == 0 and track.state == CANDIDATE
+    off = Tracker(confirm_hits=3, confirm_views=1)         # verification=False
+    track2 = _close_track(off, hits=0, views=30)
+    assert track2.close_views == 30 and track2.state == CANDIDATE

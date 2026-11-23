@@ -1,0 +1,13 @@
+# Ask the frontier selector for the best exploration goal on the current map.
+# The caller (the mission tree) owns the blacklist and passes it in, so the selector keeps no state.
+
+geometry_msgs/Point[] blacklist   # goals that failed or did not resolve their frontier (map frame)
+---
+bool found                        # false when no frontier cluster above the minimum size is left
+string reason                     # 'ok', 'no_frontiers', 'no_reachable_frontier', 'no_map', 'no_pose'
+geometry_msgs/PoseStamped goal    # map frame, heading towards the unknown
+float32 score                     # information gain / path cost minus hazard penalty
+float32 gain_m2                   # unknown area within sensor range of the goal
+float32 path_length_m             # Nav2's planned path length to the goal
+uint32 n_clusters                 # frontier clusters above the minimum size
+uint32 n_candidates               # clusters left after the blacklist

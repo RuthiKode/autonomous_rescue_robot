@@ -1,0 +1,573 @@
+"""py_trees behaviours of the mission tree (docs/PLAN.md, stage 7).
+
+Root: a priority selector, re-evaluated at every tick, children in this order:
+
+  TimeLimit  the sim-time limit is reached           -> Finish (DONE)
+  Recover    a recovery is pending (stuck, jump)     -> clear costmaps / back up / re-scan
+  Verify     a pin is waiting for a closer look      -> drive to a viewpoint, dwell
+  Explore    ask the frontier selector, drive there  (a failed goal is recorded, not fatal)
+  Finish     nothing left to do                      -> DONE, or FAILED with a reason
+
+The decisions (blacklist, counters, which pin next) are in logic.py; these classes move data between
+that logic, the frontier selector service and Nav2's actions.
+"""
+import math
+
+from action_msgs.msg import GoalStatus
+from geometry_msgs.msg import Point, PoseStamped
+from nav2_msgs.action import BackUp, NavigateToPose, Spin
+from nav2_msgs.srv import ClearEntireCostmap
+from nav_msgs.msg import OccupancyGrid
+import numpy as np
+import py_trees
+from py_trees.common import Status
+from rclpy.action import ActionClient
+from rclpy.duration import Duration
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.time import Time
+from rescue_msgs.msg import MissionState, SurvivorArray
+from rescue_msgs.srv import SelectFrontier as SelectFrontierSrv
+import tf2_ros
+
+from rescue_mission import logic as lg
+from rescue_mission.viewpoints import choose_viewpoint
+
+LATCHED = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
+                     durability=DurabilityPolicy.TRANSIENT_LOCAL)
+
+DEFAULT_PARAMS = {
+    'time_limit_s': 900.0,           # sim seconds; then the mission ends as DONE
+    'tick_period_ms': 200,
+    'reselect_delay_s': 2.0,         # wait this long before asking again after an empty answer
+    'progress_timeout_s': 30.0,      # a goal with no progress for this long is a stuck robot ...
+    'progress_min_m': 0.3,           # ... "progress" meaning at least this much closer
+    'goal_timeout_s': 150.0,         # hard limit per goal
+    'repeat_radius_m': 1.0,          # a goal this close to a reached one is blacklisted
+    'confirm_empty': 3,              # empty selector answers in a row before the mission is DONE
+    'confirm_unreachable': 8,        # "frontiers but no path" answers in a row before DONE
+    'max_consecutive_failures': 8,   # failed goals in a row before the mission is FAILED
+    'max_consecutive_recoveries': 6,  # recoveries in a row without a reached goal: FAILED
+    'recovery_enabled': True,
+    'jump_check_s': 0.5,             # map -> odom is sampled this often (sim seconds) ...
+    'jump_distance_m': 0.5,          # ... a step larger than this ...
+    'jump_yaw_rad': 0.4,             # ... or this is a localization jump
+    'backup_m': 0.3,
+    'backup_speed_mps': 0.1,
+    'rescan_rad': 6.283,             # spin after a jump, to give SLAM a full scan to relocalize on
+    'verify_enabled': False,         # drive to pins for a close look (needs localizer verification)
+    'verify_min_hits': 12,           # a candidate needs this many hits to be worth a visit
+    'verify_max_attempts': 2,
+    'verify_dwell_s': 6.0,           # sim seconds spent at the viewpoint
+    'verify_radii_m': [1.5, 1.75, 2.0],
+}
+
+
+class Context:
+    """Everything the behaviours share: the node, the clients, the decision logic and the state."""
+
+    def __init__(self, node, logic, verify_logic, params):
+        self.node = node
+        self.logic, self.verify_logic = logic, verify_logic
+        self.p = {**DEFAULT_PARAMS, **params}
+        self.select_client = node.create_client(SelectFrontierSrv, 'select_frontier')
+        self.nav_client = ActionClient(node, NavigateToPose, 'navigate_to_pose')
+        self.backup_client = ActionClient(node, BackUp, 'backup')
+        self.spin_client = ActionClient(node, Spin, 'spin')
+        self.clear_clients = [
+            node.create_client(ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap'),
+            node.create_client(ClearEntireCostmap, '/local_costmap/clear_entirely_local_costmap')]
+        self.tf_buffer = tf2_ros.Buffer(cache_time=Duration(seconds=10.0))
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, node)
+        self.state_pub = node.create_publisher(MissionState, '/mission/state', 10)
+        self.map_msg, self.survivors_msg = None, None
+        node.create_subscription(OccupancyGrid, '/map', self._on_map, LATCHED)
+        node.create_subscription(SurvivorArray, '/survivors', self._on_survivors, LATCHED)
+        self.goal = None                 # PoseStamped chosen by SelectFrontier
+        self.view_goal, self.view_track = None, None   # verification viewpoint and its pin id
+        self.finish = None               # (state, reason) once the Explore branch has ended
+        self.t0 = None                   # sim time of the first tick
+        self.recovery = None             # reason of the pending recovery, or None
+        self.active_handle = None        # Nav2 goal handle being followed
+        self._last = (None, None)
+        self._mo, self._mo_t = None, -1e9
+
+    def _on_map(self, msg):
+        self.map_msg = msg
+
+    def _on_survivors(self, msg):
+        self.survivors_msg = msg
+
+    def now_s(self):
+        return self.node.get_clock().now().nanoseconds * 1e-9
+
+    def robot_xy(self):
+        try:
+            t = self.tf_buffer.lookup_transform('map', 'base_link', Time(), Duration(seconds=0.2))
+        except tf2_ros.TransformException:
+            return None
+        return t.transform.translation.x, t.transform.translation.y
+
+    def set_state(self, state, reason):
+        """Publish /mission/state when the state or the reason changed."""
+        if (state, reason) == self._last:
+            return
+        self._last = (state, reason)
+        msg = MissionState()
+        msg.stamp = self.node.get_clock().now().to_msg()
+        msg.state, msg.reason = state, reason
+        msg.goals_sent, msg.goals_failed = self.logic.goals_sent, self.logic.goals_failed
+        msg.recoveries, msg.verifications = self.logic.recoveries, self.verify_logic.visits
+        self.state_pub.publish(msg)
+        self.node.get_logger().info(f'mission state {state}: {reason}')
+
+    def request_recovery(self, reason):
+        if self.recovery is None:
+            self.recovery = reason
+
+    def cancel_active_goal(self):
+        if self.active_handle is not None:
+            self.active_handle.cancel_goal_async()
+
+    def poll(self, _tree=None):
+        """Runs before every tick: watches map -> odom for a localization jump."""
+        if not self.p['recovery_enabled']:
+            return
+        now = self.now_s()
+        if now - self._mo_t < self.p['jump_check_s']:
+            return
+        try:
+            t = self.tf_buffer.lookup_transform('map', 'odom', Time(), Duration(seconds=0.1))
+        except tf2_ros.TransformException:
+            return
+        q, tr = t.transform.rotation, t.transform.translation
+        yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        if self._mo is not None:
+            step = math.hypot(tr.x - self._mo[0], tr.y - self._mo[1])
+            dyaw = (yaw - self._mo[2] + math.pi) % (2 * math.pi) - math.pi
+            if step > self.p['jump_distance_m'] or abs(dyaw) > self.p['jump_yaw_rad']:
+                self.node.get_logger().warning(
+                    f'localization jump: map->odom moved {step:.2f} m and {dyaw:.2f} rad in '
+                    f'{now - self._mo_t:.1f} s')
+                self.request_recovery('localization_jump')
+                self.cancel_active_goal()
+        self._mo, self._mo_t = (tr.x, tr.y, yaw), now
+
+
+# ---------------------------------------------------------------------------------------------
+# Explore
+# ---------------------------------------------------------------------------------------------
+class SelectFrontier(py_trees.behaviour.Behaviour):
+    """Ask the frontier selector for a goal. RUNNING while waiting, SUCCESS with a goal,
+    FAILURE when exploration is over (ctx.finish says why)."""
+
+    def __init__(self, ctx):
+        super().__init__('SelectFrontier')
+        self.ctx = ctx
+        self.future = None
+        self.next_try = 0.0
+
+    def initialise(self):
+        self.future = None
+
+    def update(self):
+        c = self.ctx
+        if self.future is None:
+            if c.now_s() < self.next_try or not c.select_client.service_is_ready():
+                return Status.RUNNING
+            req = SelectFrontierSrv.Request()
+            req.blacklist = [Point(x=float(x), y=float(y)) for x, y in c.logic.blacklist]
+            self.future = c.select_client.call_async(req)
+            return Status.RUNNING
+        if not self.future.done():
+            return Status.RUNNING
+        res, self.future = self.future.result(), None
+        xy = (res.goal.pose.position.x, res.goal.pose.position.y) if res.found else None
+        decision = c.logic.on_selection(res.found, res.reason, xy)
+        if decision == lg.GO:
+            c.goal = res.goal
+            self.feedback_message = (f'goal ({xy[0]:.1f}, {xy[1]:.1f}) score {res.score:.2f}, '
+                                     f'gain {res.gain_m2:.1f} m2, path {res.path_length_m:.1f} m')
+            c.node.get_logger().info(self.feedback_message)
+            return Status.SUCCESS
+        if decision == lg.RETRY:
+            self.next_try = 0.0
+        elif decision == lg.WAIT:
+            self.next_try = c.now_s() + c.p['reselect_delay_s']
+            if c.logic.want_clear:
+                c.logic.want_clear = False
+                c.request_recovery('no_path')
+        elif decision == lg.DONE:
+            c.finish = ('DONE', c.logic.done_reason)
+            return Status.FAILURE
+        elif decision == lg.FAILED:
+            c.finish = ('FAILED', c.logic.fail_reason)
+            return Status.FAILURE
+        return Status.RUNNING
+
+
+class Navigate(py_trees.behaviour.Behaviour):
+    """Drive to a PoseStamped with Nav2 and follow the goal. Subclasses say which pose and what to
+    do when it ends. A goal with no progress for a while is a stuck robot: a recovery is requested
+    and the goal fails."""
+
+    def __init__(self, name, ctx):
+        super().__init__(name)
+        self.ctx = ctx
+
+    # -- hooks
+    def pose(self):
+        raise NotImplementedError
+
+    def ended(self, ok, why):
+        """Goal over. Returns the Status of this behaviour."""
+        raise NotImplementedError
+
+    # -- machinery
+    def initialise(self):
+        self.goal_pose = self.pose()
+        self.goal_xy = (self.goal_pose.pose.position.x, self.goal_pose.pose.position.y)
+        self.send_future, self.result_future, self.handle = None, None, None
+        self.started = self.ctx.now_s()
+        self.best_dist, self.best_t = math.inf, self.started
+        self.over = False
+
+    def _end(self, ok, why):
+        self.over = True
+        self.ctx.active_handle = None
+        self.feedback_message = why
+        text = f'goal ({self.goal_xy[0]:.1f}, {self.goal_xy[1]:.1f}): {why}'
+        # rclpy forbids one call site using two severities, hence the two calls
+        if ok:
+            self.ctx.node.get_logger().info(text)
+        else:
+            self.ctx.node.get_logger().warning(text)
+        return self.ended(ok, why)
+
+    def update(self):
+        c = self.ctx
+        if self.over:
+            return self.ended_status
+        status = self._step()
+        if status is not None:
+            self.ended_status = status
+        return status if status is not None else Status.RUNNING
+
+    def _step(self):
+        c = self.ctx
+        if self.send_future is None:
+            if not c.nav_client.server_is_ready():
+                return None
+            goal = NavigateToPose.Goal()
+            goal.pose = self.goal_pose
+            self.send_future = c.nav_client.send_goal_async(goal)
+            self.sent()
+            return None
+        if self.handle is None:
+            if not self.send_future.done():
+                return None
+            self.handle = self.send_future.result()
+            if not self.handle.accepted:
+                return self._end(False, 'rejected by Nav2')
+            c.active_handle = self.handle
+            self.result_future = self.handle.get_result_async()
+        if self.result_future.done():
+            code = self.result_future.result().status
+            if code == GoalStatus.STATUS_SUCCEEDED:
+                return self._end(True, 'reached')
+            return self._end(False, f'Nav2 ended with status {code}')
+        now = c.now_s()
+        xy = c.robot_xy()
+        if xy is not None:
+            d = math.hypot(self.goal_xy[0] - xy[0], self.goal_xy[1] - xy[1])
+            if d < self.best_dist - c.p['progress_min_m']:
+                self.best_dist, self.best_t = d, now
+        if now - self.best_t > c.p['progress_timeout_s']:
+            self.handle.cancel_goal_async()
+            c.request_recovery('stuck')
+            return self._end(False, f'no progress for {c.p["progress_timeout_s"]:.0f} s (stuck)')
+        if now - self.started > c.p['goal_timeout_s']:
+            self.handle.cancel_goal_async()
+            return self._end(False, f'took longer than {c.p["goal_timeout_s"]:.0f} s')
+        return None
+
+    def sent(self):
+        pass
+
+    def terminate(self, new_status):
+        # preempted by a higher-priority branch while Nav2 was still driving
+        if new_status == Status.INVALID and getattr(self, 'handle', None) is not None \
+                and not getattr(self, 'over', True) and self.handle.accepted:
+            self.handle.cancel_goal_async()
+            self.ctx.active_handle = None
+
+
+class GoToFrontier(Navigate):
+    """SUCCESS when reached; FAILURE when it is not (the failure is recorded in the logic)."""
+
+    def __init__(self, ctx):
+        super().__init__('GoToFrontier', ctx)
+
+    def pose(self):
+        return self.ctx.goal
+
+    def sent(self):
+        c = self.ctx
+        c.logic.on_goal_sent()
+        c.set_state('EXPLORING', f'goal {c.logic.goals_sent} at '
+                                 f'({self.goal_xy[0]:.1f}, {self.goal_xy[1]:.1f})')
+
+    def ended(self, ok, why):
+        self.ctx.logic.on_result(self.goal_xy, ok)
+        return Status.SUCCESS if ok else Status.FAILURE
+
+
+# ---------------------------------------------------------------------------------------------
+# Verify
+# ---------------------------------------------------------------------------------------------
+def grid_of(msg):
+    return np.array(msg.data, dtype=np.int16).reshape(msg.info.height, msg.info.width)
+
+
+class HasVerifyTarget(py_trees.behaviour.Behaviour):
+    """SUCCESS when a pin needs a closer look and a viewpoint for it exists (stored in ctx)."""
+
+    def __init__(self, ctx):
+        super().__init__('HasVerifyTarget')
+        self.ctx = ctx
+
+    def update(self):
+        c = self.ctx
+        if c.survivors_msg is None or c.map_msg is None:
+            return Status.FAILURE
+        xy = c.robot_xy()
+        if xy is None:
+            return Status.FAILURE
+        tracks = [(s.id, s.pose.position.x, s.pose.position.y, s.state, s.hit_count)
+                  for s in c.survivors_msg.survivors]
+        target = c.verify_logic.pick(tracks, xy)
+        if target is None:
+            return Status.FAILURE
+        info = c.map_msg.info
+        view = choose_viewpoint(grid_of(c.map_msg), info.resolution,
+                                (info.origin.position.x, info.origin.position.y),
+                                (target[1], target[2]), xy, tuple(c.p['verify_radii_m']))
+        if view is None:
+            c.node.get_logger().warning(f'no viewpoint for pin {target[0]}; giving up on it')
+            c.verify_logic.on_visit(target[0])
+            return Status.FAILURE
+        pose = PoseStamped()
+        pose.header.frame_id = 'map'
+        pose.pose.position.x, pose.pose.position.y = float(view[0]), float(view[1])
+        pose.pose.orientation.z, pose.pose.orientation.w = math.sin(view[2] / 2), math.cos(view[2] / 2)
+        c.view_goal, c.view_track = pose, target[0]
+        return Status.SUCCESS
+
+
+class VisitViewpoint(Navigate):
+    """Drive to the viewpoint, then stay verify_dwell_s sim seconds while the localizer collects
+    close-range views of the pin. Always ends with SUCCESS: the visit counts as an attempt whether
+    or not it worked, so one unreachable pin cannot hold the mission up."""
+
+    def __init__(self, ctx):
+        super().__init__('VisitViewpoint', ctx)
+        self.dwell_until = None
+
+    def initialise(self):
+        self.track_id = self.ctx.view_track
+        self.dwell_until = None
+        super().initialise()
+
+    def pose(self):
+        return self.ctx.view_goal
+
+    def sent(self):
+        c = self.ctx
+        c.set_state('VERIFYING', f'pin {self.track_id}: viewpoint ({self.goal_xy[0]:.1f}, '
+                                 f'{self.goal_xy[1]:.1f})')
+
+    def ended(self, ok, why):
+        c = self.ctx
+        if ok:
+            self.dwell_until = c.now_s() + c.p['verify_dwell_s']
+            return None                      # keep going: dwell next
+        c.verify_logic.on_visit(self.track_id)
+        return Status.SUCCESS
+
+    def update(self):
+        c = self.ctx
+        if self.dwell_until is not None:
+            if c.now_s() < self.dwell_until:
+                return Status.RUNNING
+            c.verify_logic.on_visit(self.track_id)
+            return Status.SUCCESS
+        status = super().update()
+        # a successful arrival returns None from ended(): stay RUNNING for the dwell
+        return Status.RUNNING if status is None else status
+
+
+# ---------------------------------------------------------------------------------------------
+# Recover
+# ---------------------------------------------------------------------------------------------
+class HasRecovery(py_trees.behaviour.Behaviour):
+
+    def __init__(self, ctx):
+        super().__init__('HasRecovery')
+        self.ctx = ctx
+
+    def update(self):
+        return Status.SUCCESS if self.ctx.recovery else Status.FAILURE
+
+
+class _Step:
+    """One recovery step. start() was called by the constructor; done() polls."""
+
+    def __init__(self, ctx, timeout_s):
+        self.ctx, self.timeout_s, self.t0 = ctx, timeout_s, ctx.now_s()
+
+    def timed_out(self):
+        return self.ctx.now_s() - self.t0 > self.timeout_s
+
+
+class ClearCostmaps(_Step):
+    def __init__(self, ctx):
+        super().__init__(ctx, 5.0)
+        self.futures = [cl.call_async(ClearEntireCostmap.Request())
+                        for cl in ctx.clear_clients if cl.service_is_ready()]
+
+    def done(self):
+        return all(f.done() for f in self.futures) or self.timed_out()
+
+
+class ActionStep(_Step):
+    def __init__(self, ctx, client, goal, timeout_s):
+        super().__init__(ctx, timeout_s)
+        self.send, self.result = None, None
+        if client.server_is_ready():
+            self.send = client.send_goal_async(goal)
+
+    def done(self):
+        if self.send is None or self.timed_out():
+            return True
+        if self.result is None and self.send.done():
+            handle = self.send.result()
+            if not handle.accepted:
+                return True
+            self.result = handle.get_result_async()
+        return self.result is not None and self.result.done()
+
+
+class StopRobot(_Step):
+    def __init__(self, ctx):
+        super().__init__(ctx, 1.0)
+        ctx.cancel_active_goal()
+
+    def done(self):
+        return self.ctx.now_s() - self.t0 > 1.0
+
+
+def plan_recovery(ctx, reason):
+    """The steps of a recovery, as factories (each starts its step when called)."""
+    p = ctx.p
+    clear = lambda: ClearCostmaps(ctx)  # noqa: E731
+    if reason == 'no_path':
+        return [clear]
+    if reason == 'localization_jump':
+        spin = lambda: ActionStep(ctx, ctx.spin_client, _spin_goal(p['rescan_rad']), 40.0)  # noqa: E731
+        return [lambda: StopRobot(ctx), spin, clear]
+    back = lambda: ActionStep(ctx, ctx.backup_client,  # noqa: E731
+                              _backup_goal(p['backup_m'], p['backup_speed_mps']), 20.0)
+    return [clear, back]
+
+
+def _spin_goal(angle):
+    g = Spin.Goal()
+    g.target_yaw = float(angle)
+    g.time_allowance = Duration(seconds=30).to_msg()
+    return g
+
+
+def _backup_goal(distance, speed):
+    g = BackUp.Goal()
+    g.target = Point(x=-abs(float(distance)))
+    g.speed = float(speed)
+    g.time_allowance = Duration(seconds=15).to_msg()
+    return g
+
+
+class DoRecovery(py_trees.behaviour.Behaviour):
+    """Run the steps for the pending recovery, then clear it. Always ends in SUCCESS."""
+
+    def __init__(self, ctx):
+        super().__init__('DoRecovery')
+        self.ctx = ctx
+
+    def initialise(self):
+        c = self.ctx
+        self.reason = c.recovery
+        self.steps, self.current = plan_recovery(c, self.reason), None
+        c.logic.on_recovery()
+        c.set_state('RECOVERING', {'no_path': 'no frontier has a path: clearing the costmaps',
+                                   'stuck': 'robot stuck: clearing costmaps and backing up',
+                                   'localization_jump': 'localization jump: stopping and '
+                                                        're-scanning'}.get(self.reason, self.reason))
+
+    def update(self):
+        c = self.ctx
+        if self.current is None:
+            if not self.steps:
+                c.recovery = None
+                c.set_state('EXPLORING', f'recovered from {self.reason}')
+                return Status.SUCCESS
+            self.current = self.steps.pop(0)()
+        if self.current.done():
+            self.current = None
+        return Status.RUNNING
+
+
+# ---------------------------------------------------------------------------------------------
+# time limit, finish, tree
+# ---------------------------------------------------------------------------------------------
+class IsTimeUp(py_trees.behaviour.Behaviour):
+
+    def __init__(self, ctx):
+        super().__init__('IsTimeUp')
+        self.ctx = ctx
+
+    def update(self):
+        c = self.ctx
+        if c.t0 is None:
+            c.t0 = c.now_s()
+        return Status.SUCCESS if c.now_s() - c.t0 >= c.p['time_limit_s'] else Status.FAILURE
+
+
+class Finish(py_trees.behaviour.Behaviour):
+    """Publish the final state: the reason the Explore branch ended, or the time limit."""
+
+    def __init__(self, ctx, reason=None):
+        super().__init__('Finish')
+        self.ctx = ctx
+        self.reason = reason
+
+    def update(self):
+        c = self.ctx
+        state, why = c.finish or ('DONE', self.reason or 'exploration ended')
+        c.set_state(state, why)
+        return Status.SUCCESS
+
+
+def build_tree(ctx):
+    """The mission tree; Recover and Verify are present when enabled in the parameters."""
+    children = [py_trees.composites.Sequence(name='TimeLimit', memory=False, children=[
+        IsTimeUp(ctx), Finish(ctx, 'time limit reached')])]
+    if ctx.p['recovery_enabled']:
+        children.append(py_trees.composites.Sequence(name='Recover', memory=True, children=[
+            HasRecovery(ctx), DoRecovery(ctx)]))
+    if ctx.p['verify_enabled']:
+        children.append(py_trees.composites.Sequence(name='Verify', memory=True, children=[
+            HasVerifyTarget(ctx), VisitViewpoint(ctx)]))
+    children.append(py_trees.composites.Sequence(name='Explore', memory=True, children=[
+        SelectFrontier(ctx),
+        py_trees.decorators.FailureIsSuccess(name='GoToFrontier (a failure is recorded)',
+                                             child=GoToFrontier(ctx))]))
+    children.append(Finish(ctx))
+    return py_trees.composites.Selector(name='Mission', memory=False, children=children)

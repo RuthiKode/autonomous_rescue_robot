@@ -1,0 +1,26 @@
+# Mission tree parameters (docs/PLAN.md, stage 7). Values here override the defaults in behaviours.py.
+mission_tree:
+  ros__parameters:
+    time_limit_s: 900.0          # sim seconds; the mission then ends as DONE
+    tick_period_ms: 200
+    reselect_delay_s: 2.0        # wait before asking the selector again after an empty answer
+    progress_timeout_s: 30.0     # a goal with no progress for this long is a stuck robot ...
+    progress_min_m: 0.3          # ... "progress" meaning at least this much closer
+    goal_timeout_s: 150.0        # hard limit per goal
+    repeat_radius_m: 1.0         # a goal this close to a reached one is blacklisted
+    confirm_empty: 3             # empty selector answers in a row before the mission is DONE
+    confirm_unreachable: 8       # "frontiers but no path" answers in a row before DONE (costmaps cleared halfway)
+    max_consecutive_failures: 8  # failed goals in a row before the mission is FAILED
+    max_consecutive_recoveries: 6  # recoveries in a row without reaching a goal: FAILED
+    recovery_enabled: true
+    jump_check_s: 0.5            # map -> odom is sampled this often ...
+    jump_distance_m: 0.5         # ... a step larger than this ...
+    jump_yaw_rad: 0.4            # ... or this counts as a localization jump
+    backup_m: 0.3                # recovery from "stuck": clear costmaps, back up
+    backup_speed_mps: 0.1
+    rescan_rad: 6.283            # recovery from a jump: stop, spin once, clear costmaps
+    verify_enabled: false        # set by the launch argument verify:=true
+    verify_min_hits: 12          # a candidate needs this many hits to be worth a visit
+    verify_max_attempts: 2       # visits per pin
+    verify_dwell_s: 6.0          # sim seconds spent at the viewpoint
+    verify_radii_m: [1.5, 1.75, 2.0]   # viewpoint distances from the pin

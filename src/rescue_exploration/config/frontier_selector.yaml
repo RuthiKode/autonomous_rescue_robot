@@ -1,0 +1,16 @@
+# Own frontier selector (docs/PLAN.md, stage 6). Values here override the defaults in selector_node.py.
+frontier_selector:
+  ros__parameters:
+    min_cluster_m: 0.5        # frontier clusters shorter than this are dropped (explore_lite: 0.5)
+    goal_clearance_m: 0.35    # the goal cell is at least this far from an obstacle
+    gain_radius_m: 3.0        # unknown area is counted within this distance of a goal
+    min_gain_m2: 3.0          # candidates with less unknown area than this are dropped, so exploration ends
+                              # (0 until the week-7 completion runs; the first 18 runs had no floor)
+    hazard_radius_m: 1.0
+    hazard_weight: 2.0        # score penalty per square metre of hazard near the goal
+    min_path_m: 1.0           # path lengths below this count as this (no infinite score at the robot's feet)
+    min_goal_distance_m: 0.5  # frontiers closer than this to the robot are skipped
+    blacklist_radius_m: 1.0
+    top_k: 6                  # clusters with a path that are scored, best straight-line estimate first
+    max_plans: 16             # planner calls per request, at most
+    plan_timeout_s: 3.0       # wall seconds per ComputePathToPose call

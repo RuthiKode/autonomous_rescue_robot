@@ -13,6 +13,8 @@ import math
 
 CANDIDATE = 'candidate'
 CONFIRMED = 'confirmed'
+VERIFIED = 'verified'       # a close-range look found the person again, in most frames
+REJECTED = 'rejected'       # a close-range look found almost nothing: an obstacle, not a person
 
 
 class Track:
@@ -27,6 +29,8 @@ class Track:
         self.last_seen = stamp
         self.views = [viewpoint]          # distinct robot positions, each far enough from the rest
         self.in_view = 1                  # frames in which the point was visible to the camera
+        self.close_views = 0              # of those, frames at close range (see Tracker.close_range)
+        self.close_hits = 0               # detections at close range
         self.state = CANDIDATE
 
     @property
@@ -37,13 +41,27 @@ class Track:
     def hit_rate(self):
         return self.hits / max(self.in_view, 1)
 
+    @property
+    def close_rate(self):
+        return self.close_hits / max(self.close_views, 1)
+
 
 class Tracker:
 
     def __init__(self, radius=1.0, confirm_hits=5, confirm_views=2, view_separation=0.75,
                  expire_s=60.0, min_hit_rate=0.0, rate_after_views=20, confirm_confidence=0.0,
-                 merge_radius=0.0):
+                 merge_radius=0.0, verification=False, close_range=3.0, verify_views=15,
+                 verify_rate=0.5, reject_rate=0.2):
         self.radius = radius
+        # Verification (docs/PLAN.md, stage 7): once a track has been in view at close range
+        # (<= close_range m) in `verify_views` frames, it is VERIFIED if it was detected in at
+        # least `verify_rate` of them and REJECTED if in fewer than `reject_rate`. Off by
+        # default: without it tracks never reach those states.
+        self.verification = verification
+        self.close_range = close_range
+        self.verify_views = verify_views
+        self.verify_rate = verify_rate
+        self.reject_rate = reject_rate
         self.confirm_hits = confirm_hits
         self.confirm_views = confirm_views
         self.view_separation = view_separation
@@ -68,8 +86,12 @@ class Tracker:
                 best, best_d = t, d
         return best
 
-    def update(self, x, y, z, confidence, stamp, viewpoint):
-        """Add one observation (map-frame point) and return the track it belongs to."""
+    def update(self, x, y, z, confidence, stamp, viewpoint, range_m=None):
+        """Add one observation (map-frame point) and return the track it belongs to.
+
+        range_m is the distance at which it was made; at close range it also counts as a
+        close-range hit.
+        """
         track = self.nearest(x, y)
         if track is None:
             track = Track(self._next_id, x, y, z, confidence, stamp, viewpoint)
@@ -87,12 +109,16 @@ class Tracker:
             if all(math.hypot(viewpoint[0] - v[0], viewpoint[1] - v[1]) >= self.view_separation
                    for v in track.views):
                 track.views.append(viewpoint)
+        if range_m is not None and range_m <= self.close_range:
+            track.close_hits += 1
         self._reevaluate(track)
         return track
 
-    def count_view(self, track):
+    def count_view(self, track, range_m=None):
         """The point of `track` was visible to the camera in this frame (detected or not)."""
         track.in_view += 1
+        if range_m is not None and range_m <= self.close_range:
+            track.close_views += 1
         self._reevaluate(track)
 
     def _quality_ok(self, track):
@@ -101,7 +127,17 @@ class Tracker:
         return rate_ok and track.confidence >= self.confirm_confidence
 
     def _reevaluate(self, track):
-        """Confirm a candidate that qualifies; demote a confirmed track that stops qualifying."""
+        """Confirm a candidate that qualifies; demote a confirmed track that stops qualifying;
+        verify or reject a track after enough close-range views. VERIFIED and REJECTED are final."""
+        if track.state in (VERIFIED, REJECTED):
+            return
+        if self.verification and track.close_views >= self.verify_views:
+            if track.close_rate >= self.verify_rate and track.hits >= 2:
+                track.state = VERIFIED
+                return
+            if track.close_rate < self.reject_rate:
+                track.state = REJECTED
+                return
         eligible = (track.hits >= self.confirm_hits and len(track.views) >= self.confirm_views
                     and self._quality_ok(track))
         if track.state == CANDIDATE and eligible:
@@ -134,4 +170,5 @@ class Tracker:
         return dropped
 
     def confirmed(self):
-        return [t for t in self.tracks if t.state == CONFIRMED]
+        """Tracks that count as pins: confirmed or verified."""
+        return [t for t in self.tracks if t.state in (CONFIRMED, VERIFIED)]

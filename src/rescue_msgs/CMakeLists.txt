@@ -10,6 +10,8 @@ find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Survivor.msg"
   "msg/SurvivorArray.msg"
+  "msg/MissionState.msg"
+  "srv/SelectFrontier.srv"
   DEPENDENCIES builtin_interfaces geometry_msgs std_msgs
 )
 

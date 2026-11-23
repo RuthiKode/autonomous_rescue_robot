@@ -2,7 +2,9 @@
 
 string STATE_CANDIDATE="candidate"
 string STATE_CONFIRMED="confirmed"
-string STATE_VERIFIED="verified"
+string STATE_VERIFIED="verified"   # confirmed, then seen again at close range with a high hit rate
+string STATE_REJECTED="rejected"   # seen at close range and almost never detected: not a person
+string STATE_MERGED="merged"       # confirmed, but a stronger track within the merge radius replaces it
 
 uint32 id                          # unique within one run
 geometry_msgs/Pose pose            # in the frame of the enclosing SurvivorArray header (map)

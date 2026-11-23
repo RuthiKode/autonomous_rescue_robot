@@ -1,0 +1,120 @@
+{
+  "configById": {
+    "3D!map": {
+      "cameraState": {
+        "distance": 28,
+        "perspective": false,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [0, 0, 0],
+        "target": [0, 0, 0],
+        "targetOrientation": [0, 0, 0, 1],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-none",
+      "followTf": "map",
+      "scene": {
+        "enableStats": false,
+        "backgroundColor": "#1b1b1f",
+        "transforms": {"showLabel": false, "editable": false, "labelSize": 0.2, "axisScale": 0.4}
+      },
+      "transforms": {},
+      "topics": {
+        "/map": {"visible": true, "colorMode": "map", "alpha": 0.9},
+        "/hazard_map": {"visible": true, "colorMode": "custom", "minColor": "#00000000", "maxColor": "#ff9f1caa", "alpha": 0.6},
+        "/scan": {"visible": true, "pointSize": 3, "colorMode": "flat", "flatColor": "#4cc9f0"},
+        "/plan": {"visible": true, "lineWidth": 0.05, "gradient": ["#2dc653", "#2dc653"]},
+        "/frontiers": {"visible": true},
+        "/survivors/markers": {"visible": true},
+        "/ground_truth/survivor_markers": {"visible": false},
+        "/robot_description": {"visible": true}
+      },
+      "layers": {},
+      "publish": {"type": "point", "poseTopic": "/move_base_simple/goal", "pointTopic": "/clicked_point", "poseEstimateTopic": "/initialpose", "poseEstimateXDeviation": 0.5, "poseEstimateYDeviation": 0.5, "poseEstimateThetaDeviation": 0.26},
+      "imageMode": {}
+    },
+    "Image!camera": {
+      "imageMode": {"imageTopic": "/camera/image_raw"},
+      "synchronize": false
+    },
+    "StateTransitions!mission": {
+      "paths": [
+        {"value": "/mission/state.state", "timestampMethod": "receiveTime", "label": "mission state"}
+      ],
+      "isSynced": true
+    },
+    "Plot!progress": {
+      "paths": [
+        {"value": "/explore/explored_area_m2.data", "enabled": true, "timestampMethod": "receiveTime", "label": "explored area (m2)"}
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!mission": {
+      "paths": [
+        {"value": "/mission/state.goals_sent", "enabled": true, "timestampMethod": "receiveTime", "label": "goals sent"},
+        {"value": "/mission/state.goals_failed", "enabled": true, "timestampMethod": "receiveTime", "label": "goals failed"},
+        {"value": "/mission/state.recoveries", "enabled": true, "timestampMethod": "receiveTime", "label": "recoveries"},
+        {"value": "/mission/state.verifications", "enabled": true, "timestampMethod": "receiveTime", "label": "verification visits"}
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "RawMessages!detections": {
+      "topicPath": "/detections",
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false
+    },
+    "RawMessages!survivors": {
+      "topicPath": "/survivors",
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {"speed": 1},
+  "layout": {
+    "direction": "row",
+    "first": "3D!map",
+    "second": {
+      "direction": "column",
+      "first": {
+        "direction": "row",
+        "first": "Image!camera",
+        "second": "StateTransitions!mission",
+        "splitPercentage": 55
+      },
+      "second": {
+        "direction": "column",
+        "first": {
+          "direction": "row",
+          "first": "Plot!progress",
+          "second": "Plot!mission",
+          "splitPercentage": 50
+        },
+        "second": {
+          "direction": "row",
+          "first": "RawMessages!survivors",
+          "second": "RawMessages!detections",
+          "splitPercentage": 50
+        },
+        "splitPercentage": 55
+      },
+      "splitPercentage": 38
+    },
+    "splitPercentage": 58
+  }
+}

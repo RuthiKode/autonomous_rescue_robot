@@ -1,0 +1,38 @@
+name: ci
+
+# Builds the workspace and runs the unit tests (no simulation: tests that need Gazebo are skipped).
+# explore_lite is fetched at the pinned commit and its own lint tests are skipped.
+# This workflow has not been run on GitHub from this repository; the same commands were run locally.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    container: ros:jazzy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git python3-pip python3-scipy python3-matplotlib python3-yaml \
+            ros-jazzy-py-trees ros-jazzy-py-trees-ros ros-jazzy-nav2-bringup \
+            ros-jazzy-slam-toolbox ros-jazzy-robot-localization ros-jazzy-ros-gz \
+            ros-jazzy-vision-msgs ros-jazzy-depth-image-proc ros-jazzy-image-proc \
+            ros-jazzy-tf2-ros-py python3-colcon-common-extensions
+      - name: Fetch third-party sources (explore_lite)
+        run: bash scripts/fetch_third_party.sh
+      - name: Build
+        run: |
+          . /opt/ros/jazzy/setup.sh
+          colcon build --event-handlers console_cohesion+
+      - name: Test
+        run: |
+          . /opt/ros/jazzy/setup.sh
+          . install/setup.sh
+          export RESCUE_SKIP_SIM_TESTS=1
+          colcon test --packages-skip explore_lite explore_lite_msgs --event-handlers console_cohesion+
+          colcon test-result --all --verbose

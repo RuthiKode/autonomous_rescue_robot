@@ -34,6 +34,7 @@ from rescue_perception.tracker import CONFIRMED, Tracker
 
 MERGED = 'merged'      # a confirmed track that a stronger one within merge_radius_m replaces
 STATE_COLOUR = {'candidate': (1.0, 0.8, 0.0), 'confirmed': (1.0, 0.1, 0.1),
+                'verified': (0.1, 0.9, 0.2), 'rejected': (0.3, 0.3, 0.3),
                 MERGED: (0.5, 0.5, 0.5)}
 
 
@@ -109,13 +110,19 @@ class SurvivorLocalizer(Node):
         p('min_hit_rate', 0.0)           # 0 = off; see Tracker
         p('rate_after_views', 20)
         p('occlusion_tolerance_m', 0.6)
+        p('verification_enabled', False)  # close-range verification (verified / rejected states)
+        p('close_range_m', 3.0)
+        p('verify_views', 15)            # close-range frames needed for a verdict ...
+        p('verify_rate', 0.5)            # ... verified at this hit rate or more ...
+        p('reject_rate', 0.2)            # ... rejected below this one
         p('tf_timeout_s', 0.1)
         g = lambda k: self.get_parameter(k).value  # noqa: E731
         self._g = g
         self.tracker = Tracker(g('association_radius_m'), g('confirm_hits'), g('confirm_views'),
                                g('view_separation_m'), g('expire_s'), g('min_hit_rate'),
                                g('rate_after_views'), g('confirm_confidence'),
-                               g('merge_radius_m'))
+                               g('merge_radius_m'), g('verification_enabled'), g('close_range_m'),
+                               g('verify_views'), g('verify_rate'), g('reject_rate'))
         self._k = None
         self.stats = {'pairs': 0, 'detections': 0, 'used': 0, 'low_confidence': 0,
                       'bad_depth': 0, 'tf_failed': 0}
@@ -178,7 +185,7 @@ class SurvivorLocalizer(Node):
             x, y, zz = transform_point(*cam_to_map, backproject(u, v, z, fx, fy, cx, cy))
             known = {t.id: t.state for t in self.tracker.tracks}
             track = self.tracker.update(x, y, zz, score, stamp.sec + stamp.nanosec * 1e-9,
-                                        (base_in_map[0][0], base_in_map[0][1]))
+                                        (base_in_map[0][0], base_in_map[0][1]), range_m=z)
             self.stats['used'] += 1
             if track.id not in known:
                 self.get_logger().info(f'new candidate {track.id} at ({x:.2f}, {y:.2f}),'
@@ -207,7 +214,7 @@ class SurvivorLocalizer(Node):
             if point_visible(p, depth, fx, fy, cx, cy, self._g('min_range_m'),
                              self._g('max_range_m'), occlusion_tol=self._g('occlusion_tolerance_m')):
                 before = t.state
-                self.tracker.count_view(t)
+                self.tracker.count_view(t, p[2])
                 if before != t.state:
                     changed = True
                     self.get_logger().info(

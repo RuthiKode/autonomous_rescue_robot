@@ -18,8 +18,11 @@ setup(
     zip_safe=True,
     maintainer='Ruthik',
     maintainer_email='ruthik@todo.todo',
-    description='Frontier exploration configuration.',
+    description='Frontier exploration: explore_lite configuration and the own frontier selector.',
     license='MIT',
     extras_require={'test': ['pytest']},
-    entry_points={'console_scripts': []},
+    entry_points={'console_scripts': [
+        'frontier_selector = rescue_exploration.selector_node:main',
+        'map_stats = rescue_exploration.map_stats_node:main',
+    ]},
 )
