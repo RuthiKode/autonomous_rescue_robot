@@ -50,7 +50,7 @@ for seed in $(seq $FIRST $LAST); do
     for cond in $CONDITIONS; do
       [ $seed -le $(max_seed_for $cond) ] || continue
       if done_already $world $cond $seed; then continue; fi
-      bash ~/cleanup.sh >/dev/null 2>&1
+      bash scripts/hard_reset.sh --keep-sweep >/dev/null 2>&1
       echo "=== $cond $world seed $seed $(date +%T)"
       ros2 run rescue_eval explore_eval --world $world --seed $seed --method $cond \
           --output-dir $OUT $(flags_for $cond) 2>&1 \

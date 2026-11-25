@@ -42,8 +42,8 @@ scripts/week8_followup.sh                   # block seed 3 re-run + one full-lau
 | teleport | 4 | **no** | DONE (no reachable frontier) | 0.67 | 2 / 1 | 8.44 |
 | teleport | 5 | **no** | DONE (no reachable frontier) | 0.91 | 0 / 1 | 5.61 |
 
-(Numbers are copied from `results/failure_tests.log` and `results/week8_followup.log`; the block seed 1 line
-shows only the verdict that the log kept, its goals/recoveries count is in `runs/*/injection.json`.)
+(Numbers are copied from `runs/*/injection.json` and from `results/failure_tests.log` and
+`results/week8_followup.log`.)
 
 **Block seed 3:** the first attempt did not test anything: the simulator crashed (gz exit code -11) while the
 mission was still in STARTING, so the wall was injected into a dead stack and the run ended at the time limit with

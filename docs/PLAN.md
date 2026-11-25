@@ -243,6 +243,12 @@ The schedule holds 10 weeks of planned work and 2 of slack. If you fall behind, 
 
 Start marking the project "in progress" on the resume when week 1's gate passes, and mark a feature as done only when its gate passes.
 
+### Status at the end of the project (2026-11-25)
+Per-week gate results are in docs/REPORT.md. Summary: weeks 1-4 met; week 5 met with an oracle detector only;
+week 6 detector met, pin precision not; week 7 met; week 8 block 5/5 but teleport 0/5; week 9 met with 3-5
+seeds per cell instead of 10; week 10 offline replay video, no Foxglove recording; week 11 README and 211
+passing tests, CI not run on GitHub, ablations limited; week 12 REPORT.md and RESUME_CLAIMS.md.
+
 ## Risks and fallbacks
 
 The riskiest items are the Gazebo GUI under WSL2, narrow-gap navigation and detector generalization, and each has a fallback that keeps the project on schedule.
