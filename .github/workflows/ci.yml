@@ -2,7 +2,7 @@ name: ci
 
 # Builds the workspace and runs the unit tests (no simulation: tests that need Gazebo are skipped).
 # explore_lite is fetched at the pinned commit and its own lint tests are skipped.
-# This workflow has not been run on GitHub from this repository; the same commands were run locally.
+# First run on GitHub: 2026-11-25, passed (run 45596582377).
 
 on:
   push:

@@ -17,7 +17,7 @@ deviations and known issues.
 | 8 | scripted failures pass in 5 runs; full launch | block 5/5, **teleport 0/5**; full launch works | `docs/PHASE7.md` |
 | 9 | sweep, tables from CSV only | met with 3-5 seeds per cell instead of 10 | `docs/PHASE8.md`, `docs/results/` |
 | 10 | Foxglove layout, plots, demo recording | layout and offline replay video; no Foxglove screen recording | `docs/PHASE9.md`, `docs/FOXGLOVE.md` |
-| 11 | ablations, README, tests, CI | README; 211 tests pass locally; CI workflow written but not run on GitHub; ablations limited to the sweep's two (verification, fine-tuning) | below |
+| 11 | ablations, README, tests, CI | README; 211 tests pass locally; CI passes on GitHub (first run 2026-11-25); ablations limited to the sweep's two (verification, fine-tuning) | below |
 | 12 | write-up, resume claims traced | this file, `docs/RESUME_CLAIMS.md` | |
 
 ## Main findings
