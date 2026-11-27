@@ -246,7 +246,7 @@ def lost(out_csv, *bag_dirs):
             tm = world_to_map(truth, spawn)
             r, c, inside = snap.cells(np.array([[tm[0], tm[1]]]))
             possible = bool(inside[0] and snap.free[r[0], c[0]])
-            res = global_search(snap, pts)
+            res = global_search(snap, pts, min_known=40)      # as live: lost_min_known
             if res is None:
                 rows.append((rid, round(t - t_jump, 1), int(possible), '', '', '', 0, '', ''))
                 continue

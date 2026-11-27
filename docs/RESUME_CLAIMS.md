@@ -14,10 +14,10 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
 - Added kidnap detection and global relocalization (scan-to-map scoring, grid search over the SLAM map,
   slam_toolbox pose-graph re-seed) plus a "lost mode" for kidnaps into unmapped space. In lost mode,
   SLAM restarts and the robot keeps exploring; a match is accepted only when two confident matches
-  agree with the odometry between them. Recovered 5 of 5 live kidnapped-robot tests (final error
-  ≤ 0.13 m), up from 0 of 5.
+  agree with the odometry between them. Recovered 5 of 5 live kidnapped-robot tests (one batch, one
+  simulated world; final error ≤ 0.13 m), up from 0 of 5.
 - Built a seeded evaluation harness (coverage, map IoU, ATE, pin precision/recall, failure injection) and
-  generated every results table from CSV; 218 automated tests.
+  generated every results table from CSV; 221 automated tests.
 
 ## Sources
 | claim | number | source |
@@ -32,9 +32,9 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
 | kidnap detection, calibration set (not held out: thresholds chosen on it) | 5 of 5 detected, 0 flags in 8,072 normal scans (3 worlds) | `docs/PHASE10.md`, `results/reloc_offline/scores.csv` |
 | kidnapped robot recovered | 5 of 5, final error 0.00-0.13 m, 4 via lost mode (final batch) | `docs/PHASE11.md`, `results/phase11/runs/*/injection.json` |
 | progression | week 8: 0/5; phase 10: 1/5; phase 11: 5/5 | `docs/PHASE7.md`, `docs/PHASE10.md`, `docs/PHASE11.md` |
-| motion check offline | 9 of 9 accepted matches correct; 0 of 27 wrong single answers accepted | `docs/PHASE11.md`, `results/lost_offline/searches.csv` |
+| motion check offline (live setting, min 40 known endpoints) | 8 of 8 accepted matches correct; 0 of 7 wrong single answers accepted (min 20: 9 of 9, 0 of 27) | `docs/PHASE11.md`, `results/lost_offline/searches.csv`, `searches_min20.csv` |
 | blocked corridor | 5 of 5 recovered | `docs/PHASE7.md`, `results/failure_tests/runs/*/injection.json` |
-| tests | 218 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-27 |
+| tests | 221 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-27 |
 
 ## Do not claim
 - That the own selector beats explore_lite (difference -35 s to 90 %, CI -113 to +42 s: not separated).

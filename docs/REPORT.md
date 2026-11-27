@@ -20,7 +20,7 @@ deviations and known issues.
 | 11 | ablations, README, tests, CI | README; 211 tests pass locally; CI passes on GitHub (first run 2026-11-25); ablations limited to the sweep's two (verification, fine-tuning) | below |
 | 12 | write-up, resume claims traced | this file, `docs/RESUME_CLAIMS.md` | |
 | after | kidnap recovery (week-8 gap) | live: detection 5/5, no false alarm in 5 kidnap-free missions; **teleport 1/5 recovered** (the one landing in mapped space; 4 landed in unmapped space and were correctly not re-seeded); block 3/3 | `docs/PHASE10.md` |
-| after | lost mode (unmapped kidnaps) | **teleport 5/5 recovered** (≤ 0.13 m, 4 via lost mode); block 2/2; normal mission 1.00 coverage; offline 9/9 motion-confirmed matches correct | `docs/PHASE11.md` |
+| after | lost mode (unmapped kidnaps) | **teleport 5/5 recovered** (≤ 0.13 m, 4 via lost mode); block 2/2; normal mission 1.00 coverage; offline 8/8 motion-confirmed matches correct at the live setting (9/9 at a looser one) | `docs/PHASE11.md` |
 
 ## Main findings
 1. **Detection quality comes from the domain-specific fine-tune.** Paired recall gain +0.61 (95 % CI +0.39 to
@@ -57,7 +57,8 @@ hazard weight, gain radius, `min_gain_m2`, verification thresholds.
   ground truth in minutes. The one live failure mode the bags could not show (slam_toolbox snapping
   to a wrong place on its own) was caught on the first live run and fixed.
 - One confident answer is not evidence, two that agree with the robot's own motion are: an alias does
-  not move with the robot. Offline, that rule turned 27 wrong single answers into 0 wrong accepts.
+  not move with the robot. Offline, that rule turned 27 wrong single answers (7 at the live setting)
+  into 0 wrong accepts.
 - Smoke tests must exercise the thing that matters. The first reset test held the robot still, so it
   could not show that slam_toolbox stops mapping after a reset while a pause toggle is still set; the
   live run did.

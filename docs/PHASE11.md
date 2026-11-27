@@ -43,15 +43,18 @@ pose, which is exactly the condition lost mode runs in.
 - After each teleport, a search every 2 s against the map from just before it: 1,002 searches in all.
 - A search counts as *possible* if the true cell was known free in that map; otherwise a correct
   answer did not exist.
-- Data: `results/lost_offline/searches.csv`.
+- The check was first run with the search's default `min_known=20`, then re-run with 40, the value
+  the live system uses (`lost_min_known`). Both are reported.
+- Data: `results/lost_offline/searches_min20.csv` and `searches.csv` (40), with summaries
+  `summary_min20.log` and `summary_min40.log`.
 
-| | searches | confident | correct when confident |
+| | searches | confident (min 20 / **min 40**) | correct when confident (20 / **40**) |
 |---|---|---|---|
-| a correct answer was possible | 619 | 520 | 518 |
-| no correct answer existed | 383 | 25 (all wrong by definition) | - |
+| a correct answer was possible | 619 | 520 / **468** | 518 / **466** |
+| no correct answer existed | 383 | 25 / **5** (all wrong by definition) | - |
 
-So 27 single confident answers were wrong (25 + 2). Applying the motion check over the confident
-answers of each bag:
+Wrong single confident answers: 27 at 20, **7 at 40**. Applying the motion check over the confident
+answers of each bag (table below at 20):
 
 | bag | match possible | motion-checked accept | correct |
 |---|---|---|---|
@@ -62,8 +65,15 @@ answers of each bag:
 | phase-10 attempt-1 seed 1 | from +26 s | +30 s | yes (0.12 m) |
 | week-8 seeds 1-5 | from +3 to +22 s | +5 to +24 s | yes, all 5 |
 
-**9 of 9 accepted matches were correct, and 0 wrong.** None of the 27 wrong single answers passed the
-motion check. The motion-check limits were set before this run and not tuned on it, and the 0.85/0.15
+**At 20: 9 of 9 accepted matches were correct, and 0 wrong.** None of the 27 wrong single answers
+passed the motion check.
+
+**At 40 (live setting): 8 bags reached an accept, all correct, 0 wrong.**
+- Phase-10 seed 3 got only one confident match in the 7 searches where a match was possible, so it
+  was never confirmed.
+- Phase-10 attempt-1 seed 1 was confirmed later, at +117 s instead of +30 s.
+- The stricter setting gives fewer false candidates (7 instead of 27), and is a little slower and
+  catches slightly fewer. The motion-check limits were set before this run and not tuned on it, and the 0.85/0.15
 thresholds are unchanged from phase 10.
 
 **(b) Live smoke test of save → reset → reload** (`scripts/lost_cycle_smoke.sh`, robot moved, then
@@ -103,8 +113,16 @@ DONE or reached 0.85 coverage, and the final pose error is ≤ 0.5 m.
 - The landing spots differ from phase 10: the robot's route before the teleport differs from run to
   run, so the same seed does not land in the same place.
 
-**Regression:** block 2 of 2, and the normal mission finished DONE at 1.00 coverage. None of the three
-runs ever paused SLAM or entered the kidnap path.
+**Regression:**
+- Block 2 of 2, and the normal mission finished DONE at 1.00 coverage. None of the three runs ever
+  paused SLAM or entered the kidnap path.
+- **Rooms normal mission, final build** (`scripts/phase11_extra.sh`; a false kidnap is now more
+  expensive, since it ends in a SLAM reset, and rooms is where it is most likely). Result: DONE, no
+  pause, kidnap or lost line, so none of the new code ran. Coverage was only 0.79, against 0.99 for
+  phase 10's rooms run. That is within the rooms spread from before any relocalization code existed:
+  0.50-0.99 over the 12 own-mission rooms runs of the sweep.
+- **Full-mission command** with lost mode on (`scripts/full_mission_check.sh`): DONE, 0 tracebacks,
+  0 crashed processes.
 
 ## How we got here: three live attempts before the final batch (all kept)
 Each attempt found a real problem that the offline replay could not show. The final batch above runs
@@ -156,6 +174,10 @@ bash scripts/phase11_summary.sh       # per-run landing share, time lost, verdic
   that an alias can pass 0.85 / 0.15. Only the repeat guard (a second kidnap within 90 s) catches
   that case. Routing every re-seed through the motion check would be safer, at the cost of slower
   recovery.
+- **The repeat guard was never triggered live.** No final-batch run had a second kidnap soon after a
+  re-seed. It is covered by unit tests only (`test/test_reloc_guard.py`): a kidnap 30 s after a
+  re-seed skips the single-match search, one 120 s after searches as usual, and the guard is off
+  without lost mode.
 - **The map explored while lost is thrown away** when the saved map is reloaded, and is explored
   again (lost 31-175 s here).
 - **No timeout on lost mode.** A robot that never sees mapped space again explores the fresh map

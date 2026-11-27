@@ -55,11 +55,14 @@ From the evaluation sweep, 60 runs, 3-5 seeds per cell (`docs/PHASE8.md`, tables
   - **How it works:** SLAM restarts on a fresh map and the robot keeps exploring. The scan is searched
     against the saved old map, and a match is accepted only when two confident matches taken after
     real motion agree with odometry. The old map is then reloaded at that pose.
-  - **Live:** **5 of 5** teleports recovered (final error 0.00-0.13 m; 4 via lost mode, lost for
-    31-175 s), with no wrong re-seed. Block 2 of 2, and the normal mission finished at 1.00 coverage.
-  - **Offline:** on 10 unrecovered teleport recordings, 9 of 9 motion-confirmed matches were correct;
-    none of the 27 wrong single answers passed the motion check.
-- 218 unit/integration tests pass (`colcon test`, simulation tests skipped).
+  - **Live:** **5 of 5** teleports recovered in the final batch (one batch, collapsed world; final error
+    0.00-0.13 m; 4 via lost mode, lost for 31-175 s). There was no wrong re-seed in that batch. An
+    earlier attempt had one (an alias that passed the single-match thresholds), which led to the
+    repeat guard. Block 2 of 2, and the normal mission finished at 1.00 coverage.
+  - **Offline:** on 10 unrecovered teleport recordings, at the live setting (≥ 40 known endpoints),
+    8 of 8 motion-confirmed matches were correct, and none of the 7 wrong single answers passed the
+    motion check (9 of 9 and 0 of 27 at the looser setting of 20).
+- 221 unit/integration tests pass (`colcon test`, simulation tests skipped).
 
 ## Limitations
 - Kidnap recovery is tested on 5 live teleports in one world (`docs/PHASE11.md`); getting there took

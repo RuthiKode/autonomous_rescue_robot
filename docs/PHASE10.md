@@ -151,6 +151,12 @@ above is the restarted batch.
 - the detector ignores small maps.
 
 ## Reproduce
+> **Configuration note:** lost mode (`docs/PHASE11.md`) came later and is on by default. It also changes
+> the direct re-seed (it reloads the graph saved at the first low score, and a repeat kidnap within
+> 90 s skips the single-match re-seed). To reproduce this phase's live results, set
+> `lost_mode_enabled: false` in `src/rescue_mission/config/mission.yaml` and rebuild; every new path
+> checks that flag.
+
 ```bash
 python3 scripts/reloc_offline.py landing results/failure_tests     # go/no-go (a)
 bash scripts/reseed_smoke.sh                                        # go/no-go (b)
