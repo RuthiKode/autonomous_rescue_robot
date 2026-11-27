@@ -50,7 +50,9 @@ Week 8 left one test failing: after the robot is teleported 5+ m (a "kidnap"), i
 The 16 missions are the 5 teleport and 4 block tests from week 8, plus own-selector sweep runs:
 4 rooms, 2 open_plan and 1 collapsed. They are replayed from their bags with the SLAM pose from
 `/tf` and the truth from `/ground_truth/odom`. Output goes to `results/reloc_offline/`
-(`scores.csv`, `search.csv`).
+(`scores.csv`, `search.csv`). `*_binary.csv` are the first calibration, run with a binary score
+(an endpoint counted as a hit within 0.15 m of a wall) at 1 s intervals. Its second-best poses scored
+0.71-0.91, too close to the best to judge confidence, so it was replaced by the soft score below.
 
 **Detection** (scan scored every 0.5 s; only scans with ≥ 30 endpoints on known cells):
 
