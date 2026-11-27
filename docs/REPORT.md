@@ -21,6 +21,7 @@ deviations and known issues.
 | 12 | write-up, resume claims traced | this file, `docs/RESUME_CLAIMS.md` | |
 | after | kidnap recovery (week-8 gap) | live: detection 5/5, no false alarm in 5 kidnap-free missions; **teleport 1/5 recovered** (the one landing in mapped space; 4 landed in unmapped space and were correctly not re-seeded); block 3/3 | `docs/PHASE10.md` |
 | after | lost mode (unmapped kidnaps) | **teleport 5/5 recovered** (≤ 0.13 m, 4 via lost mode); block 2/2; normal mission 1.00 coverage; offline 8/8 motion-confirmed matches correct at the live setting (9/9 at a looser one) | `docs/PHASE11.md` |
+| after | every re-seed confirmed by motion | **teleport 5/5 recovered** (≤ 0.11 m; one start-up failure rerun); 6/6 re-seeds motion-confirmed; block 2/2; normal mission 0.999 coverage; direct path 20-24 s (was 3 s) | `docs/PHASE12.md` |
 
 ## Main findings
 1. **Detection quality comes from the domain-specific fine-tune.** Paired recall gain +0.61 (95 % CI +0.39 to
@@ -64,8 +65,8 @@ hazard weight, gain radius, `min_gain_m2`, verification thresholds.
   live run did.
 
 ## What next
-- Send every re-seed through the motion check, not only those in lost mode (one live alias passed the
-  single-match thresholds).
+- More teleport batches and a second world for kidnap recovery (one batch of 5 so far); a wider margin
+  for the jump-verification threshold (0.7 against a 0.66 1st percentile in normal driving).
 - A timeout for lost mode, and keeping the map explored while lost instead of discarding it.
 - Tune the verification thresholds.
 - More seeds (resume `scripts/sweep.sh 1 10`).

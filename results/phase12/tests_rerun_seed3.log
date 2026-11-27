@@ -1,0 +1,18 @@
+=== teleport collapsed seed 3 14:33:58
+[explore_eval] injected teleport: robot moved from (4.7, 2.9) to (-6.3, 0.6) (ok=True)
+[explore_eval] coverage 0.990 after 260 s; 90% at 164.2 s; stopped: mission DONE: no frontier cluster above the minimum size is left
+[explore_eval] injection teleport: recovered=True (mission DONE, coverage 0.99, 6 goals and 2 recoveries after, pose error 0.01 m (peak 11.21 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase12/runs.csv
+      1 relocalized from lost mode: saved map reloaded at (-2.66, 1.16, 0.22)
+      1 relocalization attempt 3: best (0.64, -5.05, 2.58) score 0.65, next best elsewhere 0.61: not confident
+      1 relocalization attempt 2: candidate not confirmed (no confident match after the drive)
+      1 relocalization attempt 2: best (0.64, -5.05, 2.58) score 0.66, next best elsewhere 0.61: not confident
+      1 relocalization attempt 1: candidate, driving to confirm it from another place
+      1 relocalization attempt 1: best (-6.26, 0.65, -1.19) score 0.96, next best elsewhere 0.76: confident
+      1 lost: no confident match; SLAM reset to a fresh map, searching the saved map every 2 s while exploring
+      1 lost: match (-2.91, 1.05) score 0.94 confirmed by an earlier match: matches agree with odometry within 0.04 m, 1 deg
+      1 lost: found on the saved map, reloading it
+      1 lost: candidate match (-5.56, 0.20) score 0.94, next best elsewhere 0.72; waiting for a second match after the robot moves
+      1 kidnapped: scan-to-map score 0.17
+      1 confirm drive: moved 1.23 m by odometry
+TESTS_DONE

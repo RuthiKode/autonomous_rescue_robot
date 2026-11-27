@@ -1,0 +1,72 @@
+=== teleport collapsed seed 1 13:07:38
+[explore_eval] injected teleport: robot moved from (1.5, 0.7) to (5.2, -6.0) (ok=True)
+[explore_eval] coverage 0.993 after 454 s; 90% at 406.9 s; stopped: mission DONE: no frontier cluster above the minimum size is left
+[explore_eval] injection teleport: recovered=True (mission DONE, coverage 0.99, 16 goals and 4 recoveries after, pose error 0.03 m (peak 12.25 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase12/runs.csv
+      1 relocalized from lost mode: saved map reloaded at (-0.06, -1.15, -1.90)
+      1 relocalization attempt 3: best (0.17, 0.81, -0.79) score 0.57, next best elsewhere 0.53: not confident
+      1 relocalization attempt 2: best (0.17, 0.81, -0.79) score 0.57, next best elsewhere 0.53: not confident
+      1 relocalization attempt 1: best (0.17, 0.76, -0.93) score 0.56, next best elsewhere 0.54: not confident
+      1 lost: no confident match; SLAM reset to a fresh map, searching the saved map every 2 s while exploring
+      1 lost: match (-0.03, -1.04) score 0.91 confirmed by an earlier match: matches agree with odometry within 0.05 m, 1 deg
+      1 lost: found on the saved map, reloading it
+      1 lost: candidate match (0.07, 1.31) score 0.88, next best elsewhere 0.43; waiting for a second match after the robot moves
+      1 lost: candidate match (0.02, 0.56) score 0.92, next best elsewhere 0.42; waiting for a second match after the robot moves
+      1 kidnapped: scan-to-map score 0.07
+=== teleport collapsed seed 2 13:17:59
+[explore_eval] injected teleport: robot moved from (3.9, 1.0) to (-3.3, -3.3) (ok=True)
+[explore_eval] coverage 0.131 after 370 s; 90% at nan s; stopped: mission DONE: no frontier cluster above the minimum size is left
+[explore_eval] injection teleport: recovered=False (mission DONE, coverage 0.13, 5 goals and 5 recoveries after, pose error 7.87 m (peak 8.48 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase12/runs.csv
+      1 relocalization attempt 3: best (-6.21, 1.47, 1.45) score 0.66, next best elsewhere 0.65: not confident
+      1 relocalization attempt 2: best (-6.21, 1.27, 1.41) score 0.65, next best elsewhere 0.62: not confident
+      1 relocalization attempt 1: best (-2.91, -3.28, -0.89) score 0.64, next best elsewhere 0.44: not confident
+      1 lost: no confident match; SLAM reset to a fresh map, searching the saved map every 2 s while exploring
+      1 kidnapped: scan-to-map score 0.06
+=== teleport collapsed seed 3 13:26:42
+[explore_eval] injected teleport: robot moved from (2.6, -1.8) to (3.0, 4.4) (ok=True)
+[explore_eval] coverage 0.999 after 330 s; 90% at 140.2 s; stopped: mission DONE: no frontier cluster above the minimum size is left
+[explore_eval] injection teleport: recovered=True (mission DONE, coverage 1.00, 7 goals and 3 recoveries after, pose error 0.01 m (peak 6.33 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase12/runs.csv
+      2 relocalization attempt 1: candidate, driving to confirm it from another place
+      1 relocalized: slam_toolbox re-seeded at (3.07, 2.99, -1.54)
+      1 relocalized from lost mode: saved map reloaded at (-3.86, 3.55, -1.76)
+      1 relocalization attempt 3: candidate, driving to confirm it from another place
+      1 relocalization attempt 3: best (-2.91, 4.70, -0.19) score 0.97, next best elsewhere 0.59: confident
+      1 relocalization attempt 2: candidate not confirmed: matches disagree with odometry by 1.03 m, 3 deg
+      1 relocalization attempt 2: candidate confirmed: matches agree with odometry within 0.05 m, 0 deg
+      1 relocalization attempt 2: best (3.07, 2.99, -1.54) score 0.94, next best elsewhere 0.77: confident
+      1 relocalization attempt 2: best (-2.91, 4.70, -0.19) score 0.97, next best elsewhere 0.61: confident
+      1 relocalization attempt 1: best (3.07, 4.24, -1.54) score 0.91, next best elsewhere 0.60: confident
+      1 relocalization attempt 1: best (-3.11, 4.65, -1.43) score 0.98, next best elsewhere 0.61: confident
+      1 lost: no confident match; SLAM reset to a fresh map, searching the saved map every 2 s while exploring
+      1 lost: match (-3.86, 3.55) score 0.98 confirmed by an earlier match: matches agree with odometry within 0.06 m, 1 deg
+      1 lost: found on the saved map, reloading it
+=== teleport collapsed seed 4 13:34:22
+[explore_eval] injected teleport: robot moved from (3.6, -1.0) to (-6.4, -3.7) (ok=True)
+[explore_eval] coverage 0.800 after 155 s; 90% at nan s; stopped: mission DONE: no remaining frontier is reachable
+[explore_eval] injection teleport: recovered=False (mission DONE, coverage 0.80, 1 goals and 2 recoveries after, pose error 10.06 m (peak 10.31 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase12/runs.csv
+      1 relocalization attempt 3: best (-6.49, 1.25, -0.94) score 0.74, next best elsewhere 0.71: not confident
+      1 relocalization attempt 2: best (-6.49, 1.25, -0.94) score 0.75, next best elsewhere 0.71: not confident
+      1 relocalization attempt 1: best (-2.89, 6.55, 2.46) score 0.71, next best elsewhere 0.68: not confident
+=== teleport collapsed seed 5 13:38:22
+[explore_eval] injected teleport: robot moved from (4.3, 1.8) to (-6.4, -1.4) (ok=True)
+[explore_eval] coverage 0.736 after 458 s; 90% at nan s; stopped: mission DONE: no remaining frontier is reachable
+[explore_eval] injection teleport: recovered=False (mission DONE, coverage 0.74, 12 goals and 6 recoveries after, pose error 15.93 m (peak 17.90 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase12/runs.csv
+      1 relocalization attempt 3: best (4.71, 2.80, -3.11) score 0.84, next best elsewhere 0.67: not confident
+      1 relocalization attempt 3: best (2.71, 4.35, -3.04) score 0.76, next best elsewhere 0.62: not confident
+      1 relocalization attempt 3: best (2.51, 4.30, -2.81) score 0.76, next best elsewhere 0.59: not confident
+      1 relocalization attempt 3: best (1.86, -3.70, -0.38) score 0.74, next best elsewhere 0.65: not confident
+      1 relocalization attempt 2: candidate not confirmed (no confident match after the drive)
+      1 relocalization attempt 2: best (4.71, 2.80, -3.11) score 0.84, next best elsewhere 0.67: not confident
+      1 relocalization attempt 2: best (2.66, 4.35, -3.04) score 0.76, next best elsewhere 0.62: not confident
+      1 relocalization attempt 2: best (2.51, 4.30, -2.81) score 0.76, next best elsewhere 0.59: not confident
+      1 relocalization attempt 2: best (1.86, -3.70, -0.38) score 0.75, next best elsewhere 0.66: not confident
+      1 relocalization attempt 1: candidate, driving to confirm it from another place
+      1 relocalization attempt 1: best (5.96, 2.85, 2.65) score 0.87, next best elsewhere 0.66: confident
+      1 relocalization attempt 1: best (2.76, 4.45, 3.02) score 0.63, next best elsewhere 0.60: not confident
+      1 relocalization attempt 1: best (2.51, 4.35, -3.00) score 0.70, next best elsewhere 0.63: not confident
+      1 relocalization attempt 1: best (-3.19, -6.40, -2.16) score 0.72, next best elsewhere 0.71: not confident
+=== block collapsed seed 1 13:49:21

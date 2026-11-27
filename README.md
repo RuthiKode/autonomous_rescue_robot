@@ -62,11 +62,20 @@ From the evaluation sweep, 60 runs, 3-5 seeds per cell (`docs/PHASE8.md`, tables
   - **Offline:** on 10 unrecovered teleport recordings, at the live setting (≥ 40 known endpoints),
     8 of 8 motion-confirmed matches were correct, and none of the 7 wrong single answers passed the
     motion check (9 of 9 and 0 of 27 at the looser setting of 20).
-- 221 unit/integration tests pass (`colcon test`, simulation tests skipped).
+- Every re-seed confirmed by motion (`docs/PHASE12.md`):
+  - **What changed:** the direct path now also needs a second confident match after a 1.2 m drive,
+    agreeing with odometry, and the confirmation must include translation. A localization jump that
+    cannot be confirmed, and whose scan scores below 0.7 at SLAM's new pose, starts lost mode.
+  - **Live:** **5 of 5** teleports recovered (final error 0.01-0.11 m; one simulator start-up failure
+    was rerun). All 6 re-seeds were motion-confirmed (`scripts/reseed_proof.sh`). Block 2 of 2, normal
+    mission done at 0.999 coverage.
+  - **Cost:** direct-path recovery now takes 20-24 s instead of 3 s.
+- 233 unit/integration tests pass (`colcon test`, simulation tests skipped).
 
 ## Limitations
-- Kidnap recovery is tested on 5 live teleports in one world (`docs/PHASE11.md`); getting there took
-  three live attempts, each of which found and fixed a failure (all kept and documented).
+- Kidnap recovery is tested on one batch of 5 live teleports in one world (`docs/PHASE12.md`).
+  Phases 11 and 12 each took several live attempts, each of which found and fixed a failure; all are
+  kept and documented.
 - The rooms world is weak for every explorer: ATE 0.4-1.5 m, map IoU 0.48-0.81, 3.5-5.2 recoveries per run (own mission).
 - 3-5 seeds per condition, not the planned 10 (the sweep lost most of its time to simulator and DDS leaks,
   `docs/PHASE8.md`); most comparisons are not statistically separated.

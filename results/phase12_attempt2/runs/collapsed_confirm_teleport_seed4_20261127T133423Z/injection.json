@@ -1,0 +1,22 @@
+{
+ "kind": "teleport",
+ "at_sim_s": 90.0,
+ "ok": true,
+ "what": "robot moved from (3.6, -1.0) to (-6.4, -3.7)",
+ "coverage_before": 0.792016120248339,
+ "counts_before": {
+  "goals_sent": 6,
+  "goals_failed": 0,
+  "recoveries": 0,
+  "verifications": 0
+ },
+ "log_index": 812,
+ "mission_state": "DONE",
+ "coverage_after": 0.7997494826271648,
+ "goals_after": 1,
+ "recoveries_after": 2,
+ "pose_error_final_m": 10.061185136359947,
+ "pose_error_peak_m": 10.31061123004514,
+ "recovered": false,
+ "verdict": "mission DONE, coverage 0.80, 1 goals and 2 recoveries after, pose error 10.06 m (peak 10.31 m)"
+}

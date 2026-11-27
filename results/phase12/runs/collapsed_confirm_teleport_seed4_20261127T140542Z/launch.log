@@ -1,0 +1,1023 @@
+[INFO] [launch]: All log files can be found below /home/ruthik/.ros/log/2026-11-27-14-05-42-596807-LAPTOP-P4JC9GN5-280692
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [gz-1]: process started with pid [280736]
+[INFO] [robot_state_publisher-2]: process started with pid [280737]
+[INFO] [create-3]: process started with pid [280738]
+[INFO] [parameter_bridge-4]: process started with pid [280739]
+[INFO] [covariance_stamper-5]: process started with pid [280740]
+[INFO] [ground_truth_publisher-6]: process started with pid [280741]
+[INFO] [ekf_node-7]: process started with pid [280793]
+[INFO] [async_slam_toolbox_node-8]: process started with pid [280794]
+[robot_state_publisher-2] [INFO] [1795788342.888244920] [robot_state_publisher]: Robot initialized
+[create-3] [INFO] [1795788342.890621267] [ros_gz_sim]: Waiting messages on topic [robot_description].
+[ekf_node-7] [INFO] [1795788342.951064336] [ekf_filter_node]: Waiting for clock to start...
+[async_slam_toolbox_node-8] [INFO] [1795788342.963208607] [slam_toolbox]: Node using stack size 40000000
+[ground_truth_publisher-6] [INFO] [1795788343.242207185] [ground_truth_publisher]: Publishing 4 ground-truth survivors from /home/ruthik/autonomous_rescue_robot/install/rescue_simulation/share/rescue_simulation/worlds/collapsed_survivors.yaml
+[async_slam_toolbox_node-8] [INFO] [1795788343.285112615] [slam_toolbox]: Configuring
+[async_slam_toolbox_node-8] [INFO] [1795788343.300391349] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-8] [INFO] [1795788343.302325750] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[INFO] [launch.user]: [LifecycleLaunch] Slamtoolbox node is activating.
+[async_slam_toolbox_node-8] [INFO] [1795788343.343698078] [slam_toolbox]: Activating
+[create-3] [INFO] [1795788343.440519631] [ros_gz_sim]: Entity creation successful.
+[INFO] [create-3]: process has finished cleanly [pid 280738]
+[parameter_bridge-4] [INFO] [1795788343.903061821] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.907751735] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan (sensor_msgs/msg/LaserScan)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.911275992] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/imu (gz.msgs.IMU) -> /gz/imu (sensor_msgs/msg/Imu)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.913587630] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/odom_raw (gz.msgs.Odometry) -> /gz/odom_raw (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.916685509] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/image (gz.msgs.Image) -> /camera/image_raw (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.919174595] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/depth_camera/image (gz.msgs.Image) -> /camera/depth (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.921612670] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/camera_info (gz.msgs.CameraInfo) -> /camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.924202973] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/cmd_vel (geometry_msgs/msg/Twist) -> /cmd_vel (gz.msgs.Twist)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.926243022] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/joint_states (gz.msgs.Model) -> /joint_states (sensor_msgs/msg/JointState)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795788343.928791200] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/ground_truth/odom (gz.msgs.Odometry) -> /ground_truth/odom (nav_msgs/msg/Odometry)] (Lazy 0)
+[gz-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="rescue_robot"]/link[@name="base_link"]/sensor[@name="rgb_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gz-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="rescue_robot"]/link[@name="base_link"]/sensor[@name="depth_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gz-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="rescue_robot"]/link[@name="base_link"]/sensor[@name="imu"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gz-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="rescue_robot"]/link[@name="base_link"]/sensor[@name="lidar"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[async_slam_toolbox_node-8] Registering sensor: [Custom Described Lidar]
+[parameter_bridge-4] [INFO] [1795788347.999472290] [ros_gz_bridge]: Passing message from ROS geometry_msgs/msg/Twist to Gazebo gz.msgs.Twist (showing msg only once per type)
+[WARN] [ros2bag]: Positional "topics" argument deprecated. Please use optional "--topics" argument instead.
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1795788348.306638630] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[INFO] [1795788348.306647619] [rosbag2_recorder]: Event publisher thread: Started
+[INFO] [1795788348.309946857] [rosbag2_recorder]: Starting recording to '/home/ruthik/autonomous_rescue_robot/results/phase12/bags/collapsed_confirm_teleport_seed4_20261127T140542Z'
+[INFO] [1795788348.311509273] [rosbag2_recorder]: Listening for topics...
+[INFO] [1795788348.311535979] [rosbag2_recorder]: Recording...
+[INFO] [1795788348.311550825] [rosbag2_recorder]: Topics discovery started.
+[INFO] [1795788348.311586972] [rosbag2_recorder]: use_sim_time set, waiting for /clock before starting recording...
+[INFO] [1795788349.413576532] [rosbag2_recorder]: Sim time /clock found, starting recording.
+[INFO] [1795788349.416993591] [rosbag2_recorder]: Subscribed to topic '/scan'
+[INFO] [1795788349.419374987] [rosbag2_recorder]: Subscribed to topic '/imu'
+[INFO] [1795788349.422448893] [rosbag2_recorder]: Subscribed to topic '/ground_truth/odom'
+[INFO] [1795788349.425650505] [rosbag2_recorder]: Subscribed to topic '/tf'
+[INFO] [1795788349.428279441] [rosbag2_recorder]: Subscribed to topic '/ground_truth/survivor_markers'
+[INFO] [1795788349.430553602] [rosbag2_recorder]: Subscribed to topic '/camera/camera_info'
+[INFO] [1795788349.431930194] [rosbag2_recorder]: Subscribed to topic '/robot_description'
+[INFO] [1795788349.432909076] [rosbag2_recorder]: Subscribed to topic '/odometry/filtered'
+[INFO] [1795788349.434580530] [rosbag2_recorder]: Subscribed to topic '/cmd_vel'
+[INFO] [1795788349.436347834] [rosbag2_recorder]: Subscribed to topic '/ground_truth/survivors'
+[INFO] [1795788349.437981515] [rosbag2_recorder]: Subscribed to topic '/map'
+[INFO] [1795788349.439425052] [rosbag2_recorder]: Subscribed to topic '/tf_static'
+[INFO] [1795788349.440562609] [rosbag2_recorder]: Subscribed to topic '/slam_toolbox/graph_visualization'
+[INFO] [1795788349.441572750] [rosbag2_recorder]: Subscribed to topic '/odom_raw'
+[INFO] [launch]: All log files can be found below /home/ruthik/.ros/log/2026-11-27-14-05-54-297504-LAPTOP-P4JC9GN5-281150
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [component_container-1]: process started with pid [281199]
+[INFO] [hazard_layer-2]: process started with pid [281200]
+[INFO] [controller_server-3]: process started with pid [281201]
+[INFO] [smoother_server-4]: process started with pid [281202]
+[INFO] [planner_server-5]: process started with pid [281205]
+[INFO] [route_server-6]: process started with pid [281206]
+[INFO] [behavior_server-7]: process started with pid [281222]
+[INFO] [bt_navigator-8]: process started with pid [281223]
+[INFO] [waypoint_follower-9]: process started with pid [281224]
+[INFO] [velocity_smoother-10]: process started with pid [281228]
+[INFO] [collision_monitor-11]: process started with pid [281230]
+[INFO] [opennav_docking-12]: process started with pid [281232]
+[INFO] [lifecycle_manager-13]: process started with pid [281236]
+[collision_monitor-11] [INFO] [1795788355.309220981] [collision_monitor]: 
+[collision_monitor-11] 	collision_monitor lifecycle node launched. 
+[collision_monitor-11] 	Waiting on external lifecycle transitions to activate
+[collision_monitor-11] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-9] [INFO] [1795788355.382003786] [waypoint_follower]: 
+[waypoint_follower-9] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-9] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-9] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-9] [INFO] [1795788355.385238362] [waypoint_follower]: Creating
+[controller_server-3] [INFO] [1795788355.391718585] [controller_server]: 
+[controller_server-3] 	controller_server lifecycle node launched. 
+[controller_server-3] 	Waiting on external lifecycle transitions to activate
+[controller_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-5] [INFO] [1795788355.400733072] [planner_server]: 
+[planner_server-5] 	planner_server lifecycle node launched. 
+[planner_server-5] 	Waiting on external lifecycle transitions to activate
+[planner_server-5] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-5] [INFO] [1795788355.402387832] [planner_server]: Creating
+[controller_server-3] [INFO] [1795788355.411443971] [controller_server]: Creating controller server
+[velocity_smoother-10] [INFO] [1795788355.436638012] [velocity_smoother]: 
+[velocity_smoother-10] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-10] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[route_server-6] [INFO] [1795788355.444693871] [route_server]: 
+[route_server-6] 	route_server lifecycle node launched. 
+[route_server-6] 	Waiting on external lifecycle transitions to activate
+[route_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[lifecycle_manager-13] [INFO] [1795788355.446713632] [lifecycle_manager_navigation]: Creating
+[lifecycle_manager-13] [INFO] [1795788355.456351005] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[behavior_server-7] [INFO] [1795788355.458211350] [behavior_server]: 
+[behavior_server-7] 	behavior_server lifecycle node launched. 
+[behavior_server-7] 	Waiting on external lifecycle transitions to activate
+[behavior_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[opennav_docking-12] [INFO] [1795788355.480407568] [docking_server]: 
+[opennav_docking-12] 	docking_server lifecycle node launched. 
+[opennav_docking-12] 	Waiting on external lifecycle transitions to activate
+[opennav_docking-12] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[opennav_docking-12] [INFO] [1795788355.480511779] [docking_server]: Creating docking_server
+[bt_navigator-8] [INFO] [1795788355.481289978] [bt_navigator]: 
+[bt_navigator-8] 	bt_navigator lifecycle node launched. 
+[bt_navigator-8] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-8] [INFO] [1795788355.486238130] [bt_navigator]: Creating
+[planner_server-5] [INFO] [1795788355.509887629] [global_costmap.global_costmap]: 
+[planner_server-5] 	global_costmap lifecycle node launched. 
+[planner_server-5] 	Waiting on external lifecycle transitions to activate
+[planner_server-5] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-5] [INFO] [1795788355.511080131] [global_costmap.global_costmap]: Creating Costmap
+[controller_server-3] [INFO] [1795788355.516038762] [local_costmap.local_costmap]: 
+[controller_server-3] 	local_costmap lifecycle node launched. 
+[controller_server-3] 	Waiting on external lifecycle transitions to activate
+[controller_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-3] [INFO] [1795788355.518052601] [local_costmap.local_costmap]: Creating Costmap
+[smoother_server-4] [INFO] [1795788355.749899076] [smoother_server]: 
+[smoother_server-4] 	smoother_server lifecycle node launched. 
+[smoother_server-4] 	Waiting on external lifecycle transitions to activate
+[smoother_server-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-4] [INFO] [1795788355.754006003] [smoother_server]: Creating smoother server
+[component_container-1] [INFO] [1795788356.044038575] [depth_points_container]: Load Library: /opt/ros/jazzy/lib/libresize.so
+[component_container-1] [INFO] [1795788356.094224127] [depth_points_container]: Found class: rclcpp_components::NodeFactoryTemplate<image_proc::ResizeNode>
+[component_container-1] [INFO] [1795788356.094277482] [depth_points_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<image_proc::ResizeNode>
+[INFO] [1795788356.179314774] [rosbag2_recorder]: Subscribed to topic '/hazard_map'
+[lifecycle_manager-13] [INFO] [1795788356.197867147] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-13] [INFO] [1795788356.197911941] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-3] [INFO] [1795788356.198448112] [controller_server]: Configuring controller interface
+[controller_server-3] [INFO] [1795788356.198471826] [controller_server]: getting progress checker plugins..
+[controller_server-3] [INFO] [1795788356.199134292] [controller_server]: getting goal checker plugins..
+[controller_server-3] [INFO] [1795788356.199209829] [controller_server]: Controller frequency set to 20.0000Hz
+[controller_server-3] [INFO] [1795788356.199244717] [local_costmap.local_costmap]: Configuring
+[controller_server-3] [INFO] [1795788356.217167608] [local_costmap.local_costmap]: Using plugin "voxel_layer"
+[controller_server-3] [INFO] [1795788356.223794105] [local_costmap.local_costmap]: Subscribed to Topics: scan depth
+[controller_server-3] [INFO] [1795788356.259721481] [local_costmap.local_costmap]: Initialized plugin "voxel_layer"
+[controller_server-3] [INFO] [1795788356.259761511] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-3] [INFO] [1795788356.261197998] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/depth_resize' in container '/depth_points_container'
+[component_container-1] [INFO] [1795788356.275032405] [depth_points_container]: Load Library: /opt/ros/jazzy/lib/libdepth_image_proc.so
+[component_container-1] [INFO] [1795788356.285876135] [depth_points_container]: Found class: rclcpp_components::NodeFactoryTemplate<depth_image_proc::ConvertMetricNode>
+[component_container-1] [INFO] [1795788356.285940555] [depth_points_container]: Found class: rclcpp_components::NodeFactoryTemplate<depth_image_proc::CropForemostNode>
+[component_container-1] [INFO] [1795788356.285943498] [depth_points_container]: Found class: rclcpp_components::NodeFactoryTemplate<depth_image_proc::DisparityNode>
+[component_container-1] [INFO] [1795788356.285945692] [depth_points_container]: Found class: rclcpp_components::NodeFactoryTemplate<depth_image_proc::PointCloudXyzNode>
+[component_container-1] [INFO] [1795788356.285947766] [depth_points_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<depth_image_proc::PointCloudXyzNode>
+[controller_server-3] [INFO] [1795788356.306153989] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-3] [INFO] [1795788356.306672366] [controller_server]: Controller Server has progress_checker  progress checkers available.
+[controller_server-3] [INFO] [1795788356.308060023] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-3] [INFO] [1795788356.311465907] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[controller_server-3] [INFO] [1795788356.313565968] [controller_server]: Created controller : FollowPath of type nav2_mppi_controller::MPPIController
+[controller_server-3] [INFO] [1795788356.317369372] [controller_server]: Controller period is equal to model dt. Control sequence shifting is ON
+[controller_server-3] [INFO] [1795788356.320326614] [controller_server]: ConstraintCritic instantiated with 1 power and 4.000000 weight.
+[controller_server-3] [INFO] [1795788356.320360060] [controller_server]: Critic loaded : mppi::critics::ConstraintCritic
+[controller_server-3] [INFO] [1795788356.325305111] [controller_server]: InflationCostCritic instantiated with 1 power and 300.000000 / 0.015000 weights. Critic will collision check based on footprint cost.
+[controller_server-3] [INFO] [1795788356.325344524] [controller_server]: Critic loaded : mppi::critics::CostCritic
+[controller_server-3] [INFO] [1795788356.326867887] [controller_server]: GoalCritic instantiated with 1 power and 5.000000 weight.
+[controller_server-3] [INFO] [1795788356.326898523] [controller_server]: Critic loaded : mppi::critics::GoalCritic
+[controller_server-3] [INFO] [1795788356.327020812] [controller_server]: GoalAngleCritic instantiated with 1 power, 3.000000 weight, 0.500000 angular threshold and symmetric_yaw_tolerance disabled
+[controller_server-3] [INFO] [1795788356.327031628] [controller_server]: Critic loaded : mppi::critics::GoalAngleCritic
+[controller_server-3] [INFO] [1795788356.327147425] [controller_server]: ReferenceTrajectoryCritic instantiated with 1 power and 14.000000 weight
+[controller_server-3] [INFO] [1795788356.327153197] [controller_server]: Critic loaded : mppi::critics::PathAlignCritic
+[controller_server-3] [INFO] [1795788356.327222343] [controller_server]: Critic loaded : mppi::critics::PathFollowCritic
+[controller_server-3] [INFO] [1795788356.327327964] [controller_server]: PathAngleCritic instantiated with 1 power and 2.000000 weight. Mode set to: Forward Preference
+[controller_server-3] [INFO] [1795788356.327332892] [controller_server]: Critic loaded : mppi::critics::PathAngleCritic
+[controller_server-3] [INFO] [1795788356.327425270] [controller_server]: PreferForwardCritic instantiated with 1 power and 5.000000 weight.
+[controller_server-3] [INFO] [1795788356.327432451] [controller_server]: Critic loaded : mppi::critics::PreferForwardCritic
+[controller_server-3] [INFO] [1795788356.332810409] [controller_server]: Optimizer reset
+[controller_server-3] [INFO] [1795788356.352021941] [MPPIController]: Configured MPPI Controller: FollowPath
+[controller_server-3] [INFO] [1795788356.352359698] [controller_server]: Controller Server has FollowPath  controllers available.
+[INFO] [launch_ros.actions.load_composable_nodes]: Loaded node '/depth_points' in container '/depth_points_container'
+[INFO] [1795788356.385120540] [rosbag2_recorder]: Subscribed to topic '/cmd_vel_nav'
+[hazard_layer-2] [INFO] [1795788356.417152767] [hazard_layer]: hazard map: 480 hazard cells of 9340 known-free
+[lifecycle_manager-13] [INFO] [1795788356.424561598] [lifecycle_manager_navigation]: [34m[1mConfiguring smoother_server[0m[0m
+[smoother_server-4] [INFO] [1795788356.425799075] [smoother_server]: Configuring smoother server
+[smoother_server-4] [INFO] [1795788356.459932264] [smoother_server]: Created smoother : simple_smoother of type nav2_smoother::SimpleSmoother
+[smoother_server-4] [INFO] [1795788356.462190968] [smoother_server]: Smoother Server has simple_smoother  smoothers available.
+[lifecycle_manager-13] [INFO] [1795788356.480881349] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-5] [INFO] [1795788356.481753911] [planner_server]: Configuring
+[planner_server-5] [INFO] [1795788356.481801352] [global_costmap.global_costmap]: Configuring
+[planner_server-5] [INFO] [1795788356.514943986] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-5] [INFO] [1795788356.522811946] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-5] [INFO] [1795788356.527267404] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-5] [INFO] [1795788356.527313895] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-5] [INFO] [1795788356.529252455] [global_costmap.global_costmap]: Subscribed to Topics: scan depth
+[planner_server-5] [INFO] [1795788356.571242644] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-5] [INFO] [1795788356.571273182] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-5] [INFO] [1795788356.571882468] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-5] [INFO] [1795788356.627536122] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner::NavfnPlanner
+[planner_server-5] [INFO] [1795788356.627592005] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[planner_server-5] [INFO] [1795788356.628197516] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 278 X 278 at 0.050000 m/pix
+[planner_server-5] [INFO] [1795788356.632828425] [planner_server]: Planner Server has GridBased  planners available.
+[INFO] [1795788356.648458365] [rosbag2_recorder]: Subscribed to topic '/plan'
+[lifecycle_manager-13] [INFO] [1795788356.652027873] [lifecycle_manager_navigation]: [34m[1mConfiguring route_server[0m[0m
+[route_server-6] [INFO] [1795788356.652735220] [route_server]: Configuring
+[route_server-6] [INFO] [1795788356.726423259] [route_server]: Created GraphFileLoader GeoJsonGraphFileLoader of type nav2_route::GeoJsonGraphFileLoader
+[route_server-6] [INFO] [1795788356.726455056] [route_server]: Configuring geojson graph file loader
+[route_server-6] [INFO] [1795788356.726460730] [route_server]: No graph file provided to load yet.
+[route_server-6] [INFO] [1795788356.735065002] [route_server]: Created edge cost function plugin DistanceScorer of type nav2_route::DistanceScorer
+[route_server-6] [INFO] [1795788356.735116472] [route_server]: Configuring distance scorer.
+[route_server-6] [INFO] [1795788356.735710253] [route_server]: Created edge cost function plugin CostmapScorer of type nav2_route::CostmapScorer
+[route_server-6] [INFO] [1795788356.735733962] [route_server]: Configuring costmap scorer.
+[route_server-6] [INFO] [1795788356.746760688] [route_server]: Created route operation AdjustSpeedLimit of type nav2_route::AdjustSpeedLimit
+[route_server-6] [INFO] [1795788356.746804695] [route_server]: Configuring Adjust speed limit operation.
+[route_server-6] [INFO] [1795788356.749139131] [route_server]: Created route operation ReroutingService of type nav2_route::ReroutingService
+[route_server-6] [INFO] [1795788356.749201784] [route_server]: Configuring Rerouting service operation.
+[route_server-6] [INFO] [1795788356.755633877] [route_server]: Created route operation CollisionMonitor of type nav2_route::CollisionMonitor
+[route_server-6] [INFO] [1795788356.756038111] [route_server]: Using costmap topic: local_costmap/costmap_raw instead of server costmap topic: global_costmap/costmap_raw for CollisionMonitor.
+[lifecycle_manager-13] [INFO] [1795788356.770261947] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[behavior_server-7] [INFO] [1795788356.771262441] [behavior_server]: Configuring
+[behavior_server-7] [INFO] [1795788356.786082696] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors::Spin
+[behavior_server-7] [INFO] [1795788356.786978072] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors::BackUp
+[behavior_server-7] [INFO] [1795788356.790771100] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors::DriveOnHeading
+[behavior_server-7] [INFO] [1795788356.792641207] [behavior_server]: Creating behavior plugin assisted_teleop of type nav2_behaviors::AssistedTeleop
+[behavior_server-7] [INFO] [1795788356.794720183] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors::Wait
+[behavior_server-7] [INFO] [1795788356.805717312] [behavior_server]: Configuring spin
+[behavior_server-7] [INFO] [1795788356.819866683] [behavior_server]: Configuring backup
+[behavior_server-7] [INFO] [1795788356.824487630] [behavior_server]: Configuring drive_on_heading
+[behavior_server-7] [INFO] [1795788356.833972056] [behavior_server]: Configuring assisted_teleop
+[behavior_server-7] [INFO] [1795788356.859768938] [behavior_server]: Configuring wait
+[lifecycle_manager-13] [INFO] [1795788356.878606153] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[velocity_smoother-10] [INFO] [1795788356.879048631] [velocity_smoother]: Configuring velocity smoother
+[lifecycle_manager-13] [INFO] [1795788356.898181555] [lifecycle_manager_navigation]: [34m[1mConfiguring collision_monitor[0m[0m
+[collision_monitor-11] [INFO] [1795788356.899327041] [collision_monitor]: Configuring
+[collision_monitor-11] [INFO] [1795788356.935166280] [collision_monitor]: [scan]: Creating Scan
+[collision_monitor-11] [INFO] [1795788356.943532684] [collision_monitor]: [FootprintApproach]: Creating Polygon
+[collision_monitor-11] [INFO] [1795788356.943777519] [collision_monitor]: [FootprintApproach]: Polygon points are not defined. Using dynamic subscription instead.
+[collision_monitor-11] [INFO] [1795788356.946503861] [collision_monitor]: [FootprintApproach]: Making footprint subscriber on /local_costmap/published_footprint topic
+[lifecycle_manager-13] [INFO] [1795788356.978847822] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-8] [INFO] [1795788356.979304596] [bt_navigator]: Configuring
+[bt_navigator-8] [INFO] [1795788357.004465792] [bt_navigator]: Creating navigator id navigate_to_pose of type nav2_bt_navigator::NavigateToPoseNavigator
+[bt_navigator-8] [INFO] [1795788357.136979087] [bt_navigator]: Creating navigator id navigate_through_poses of type nav2_bt_navigator::NavigateThroughPosesNavigator
+[lifecycle_manager-13] [INFO] [1795788357.235036491] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[waypoint_follower-9] [INFO] [1795788357.235729704] [waypoint_follower]: Configuring
+[waypoint_follower-9] [INFO] [1795788357.292995926] [waypoint_follower]: Created waypoint_task_executor : wait_at_waypoint of type nav2_waypoint_follower::WaitAtWaypoint
+[lifecycle_manager-13] [INFO] [1795788357.299561669] [lifecycle_manager_navigation]: [34m[1mConfiguring docking_server[0m[0m
+[opennav_docking-12] [INFO] [1795788357.300235296] [docking_server]: Configuring docking_server
+[opennav_docking-12] [INFO] [1795788357.300273629] [docking_server]: Controller frequency set to 50.0000Hz
+[opennav_docking-12] [INFO] [1795788357.356920247] [docking_server]: Created charging dock plugin simple_charging_dock of type opennav_docking::SimpleChargingDock
+[opennav_docking-12] [WARN] [1795788357.371033386] [docking_server]: Dock database filepath nor dock parameters set. Docking actions can only be executed specifying the dock pose via the action request. Or update the dock database via the reload_database service.
+[opennav_docking-12] [INFO] [1795788357.371069073] [docking_server]: Docking Server has 1 dock types and 0 dock instances available.
+[lifecycle_manager-13] [INFO] [1795788357.375346073] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-3] [INFO] [1795788357.375796867] [controller_server]: Activating
+[controller_server-3] [INFO] [1795788357.375845451] [local_costmap.local_costmap]: Activating
+[controller_server-3] [INFO] [1795788357.375850726] [local_costmap.local_costmap]: Checking transform
+[controller_server-3] [INFO] [1795788357.375945315] [local_costmap.local_costmap]: start
+[controller_server-3] [WARN] [1795788357.580922959] [controller_server]: Parameter controller_server.verbose not found
+[controller_server-3] [INFO] [1795788357.582357312] [controller_server]: Optimizer reset
+[controller_server-3] [INFO] [1795788357.582980994] [MPPIController]: Activated MPPI Controller: FollowPath
+[controller_server-3] [INFO] [1795788357.583015533] [controller_server]: Creating bond (controller_server) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788357.690714911] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[lifecycle_manager-13] [INFO] [1795788357.690762974] [lifecycle_manager_navigation]: [34m[1mActivating smoother_server[0m[0m
+[smoother_server-4] [INFO] [1795788357.691354545] [smoother_server]: Activating
+[smoother_server-4] [INFO] [1795788357.691420160] [smoother_server]: Creating bond (smoother_server) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788357.804511909] [lifecycle_manager_navigation]: Server smoother_server connected with bond.
+[lifecycle_manager-13] [INFO] [1795788357.804548877] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-5] [INFO] [1795788357.804913856] [planner_server]: Activating
+[planner_server-5] [INFO] [1795788357.804951604] [global_costmap.global_costmap]: Activating
+[planner_server-5] [INFO] [1795788357.804957724] [global_costmap.global_costmap]: Checking transform
+[planner_server-5] [INFO] [1795788357.805059333] [global_costmap.global_costmap]: start
+[planner_server-5] [INFO] [1795788358.857832847] [planner_server]: Activating plugin GridBased of type NavfnPlanner
+[planner_server-5] [INFO] [1795788358.862996795] [planner_server]: Creating bond (planner_server) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788358.977395125] [lifecycle_manager_navigation]: Server planner_server connected with bond.
+[lifecycle_manager-13] [INFO] [1795788358.977429998] [lifecycle_manager_navigation]: [34m[1mActivating route_server[0m[0m
+[route_server-6] [INFO] [1795788358.977785801] [route_server]: Activating
+[route_server-6] [INFO] [1795788358.978001679] [route_server]: Creating bond (route_server) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788359.096014538] [lifecycle_manager_navigation]: Server route_server connected with bond.
+[lifecycle_manager-13] [INFO] [1795788359.096066659] [lifecycle_manager_navigation]: [34m[1mActivating behavior_server[0m[0m
+[behavior_server-7] [INFO] [1795788359.097044377] [behavior_server]: Activating
+[behavior_server-7] [INFO] [1795788359.097076053] [behavior_server]: Activating spin
+[behavior_server-7] [INFO] [1795788359.097089324] [behavior_server]: Activating backup
+[behavior_server-7] [INFO] [1795788359.097100277] [behavior_server]: Activating drive_on_heading
+[behavior_server-7] [INFO] [1795788359.097109238] [behavior_server]: Activating assisted_teleop
+[behavior_server-7] [INFO] [1795788359.097119851] [behavior_server]: Activating wait
+[behavior_server-7] [INFO] [1795788359.097135854] [behavior_server]: Creating bond (behavior_server) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788359.211142688] [lifecycle_manager_navigation]: Server behavior_server connected with bond.
+[lifecycle_manager-13] [INFO] [1795788359.211191007] [lifecycle_manager_navigation]: [34m[1mActivating velocity_smoother[0m[0m
+[velocity_smoother-10] [INFO] [1795788359.212327536] [velocity_smoother]: Activating
+[velocity_smoother-10] [INFO] [1795788359.212397164] [velocity_smoother]: Creating bond (velocity_smoother) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788359.329345163] [lifecycle_manager_navigation]: Server velocity_smoother connected with bond.
+[lifecycle_manager-13] [INFO] [1795788359.329412770] [lifecycle_manager_navigation]: [34m[1mActivating collision_monitor[0m[0m
+[collision_monitor-11] [INFO] [1795788359.329942026] [collision_monitor]: Activating
+[collision_monitor-11] [INFO] [1795788359.330012053] [collision_monitor]: Creating bond (collision_monitor) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788359.438921297] [lifecycle_manager_navigation]: Server collision_monitor connected with bond.
+[lifecycle_manager-13] [INFO] [1795788359.438996161] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[bt_navigator-8] [INFO] [1795788359.439420720] [bt_navigator]: Activating
+[INFO] [1795788359.544970462] [rosbag2_recorder]: Subscribed to topic '/behavior_tree_log'
+[bt_navigator-8] [INFO] [1795788359.634298566] [bt_navigator]: Creating bond (bt_navigator) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788359.749089442] [lifecycle_manager_navigation]: Server bt_navigator connected with bond.
+[lifecycle_manager-13] [INFO] [1795788359.749128492] [lifecycle_manager_navigation]: [34m[1mActivating waypoint_follower[0m[0m
+[waypoint_follower-9] [INFO] [1795788359.749964037] [waypoint_follower]: Activating
+[waypoint_follower-9] [INFO] [1795788359.749998478] [waypoint_follower]: Creating bond (waypoint_follower) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788359.863821736] [lifecycle_manager_navigation]: Server waypoint_follower connected with bond.
+[lifecycle_manager-13] [INFO] [1795788359.863859410] [lifecycle_manager_navigation]: [34m[1mActivating docking_server[0m[0m
+[opennav_docking-12] [INFO] [1795788359.864290597] [docking_server]: Activating docking_server
+[opennav_docking-12] [INFO] [1795788359.892678120] [docking_server]: Creating bond (docking_server) to lifecycle manager.
+[lifecycle_manager-13] [INFO] [1795788360.001257497] [lifecycle_manager_navigation]: Server docking_server connected with bond.
+[lifecycle_manager-13] [INFO] [1795788360.001304830] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-13] [INFO] [1795788360.001316100] [lifecycle_manager_navigation]: [34m[1mCreating bond timer...[0m[0m
+[INFO] [launch]: All log files can be found below /home/ruthik/.ros/log/2026-11-27-14-06-00-748474-LAPTOP-P4JC9GN5-281578
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [frontier_selector-1]: process started with pid [281591]
+[INFO] [mission_tree-2]: process started with pid [281592]
+[INFO] [map_stats-3]: process started with pid [281593]
+[frontier_selector-1] [INFO] [1795788362.210435773] [frontier_selector]: frontier selector ready
+[mission_tree-2] [INFO] [1795788362.561465539] [mission_tree]: mission state STARTING: waiting for the map, Nav2 and the frontier selector
+[INFO] [1795788363.427476358] [rosbag2_recorder]: Subscribed to topic '/mission/state'
+[planner_server-5] [WARN] [1795788365.692526375] [planner_server]: No planners specified in action call. Server will use only plugin GridBased  in server. This warning will appear once.
+[planner_server-5] [ERROR] [1795788365.743761041] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788365.743872180] [planner_server]:  plugin failed to plan from (0.89, -0.00) to (-0.03, 3.22): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788365.743891354] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[planner_server-5] [ERROR] [1795788365.768114724] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788365.768234090] [planner_server]:  plugin failed to plan from (0.89, -0.00) to (-0.28, 3.92): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788365.768243290] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[planner_server-5] [ERROR] [1795788365.796500784] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788365.796622944] [planner_server]:  plugin failed to plan from (0.89, -0.00) to (-0.48, 3.82): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788365.796635717] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[mission_tree-2] [INFO] [1795788365.931329739] [mission_tree]: goal (1.7, 1.1) score 11.35, gain 16.0 m2, path 1.4 m
+[mission_tree-2] [INFO] [1795788365.932346761] [mission_tree]: mission state EXPLORING: goal 1 at (1.7, 1.1)
+[bt_navigator-8] [INFO] [1795788365.933111255] [bt_navigator]: Begin navigating from current location (0.89, -0.00) to (1.72, 1.12)
+[controller_server-3] [INFO] [1795788365.955666155] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [WARN] [1795788365.955719005] [controller_server]: No goal checker was specified in parameter 'current_goal_checker'. Server will use only plugin loaded general_goal_checker . This warning will appear once.
+[controller_server-3] [WARN] [1795788365.955737796] [controller_server]: No progress checker was specified in parameter 'current_progress_checker'. Server will use only plugin loaded progress_checker . This warning will appear once.
+[controller_server-3] [INFO] [1795788369.985849395] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788371.035041855] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788371.384082771] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 278 X 278 at 0.050000 m/pix
+[gz-1] NodeShared::Publish() Error: Interrupted system call
+[controller_server-3] [INFO] [1795788372.035396884] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788373.084233461] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788374.084383868] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788375.086149288] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788375.384205119] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 278 X 279 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788376.134340716] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788377.134846476] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788378.184322727] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788379.185209892] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788379.384113773] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 279 X 279 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788379.484356182] [controller_server]: Reached the goal!
+[controller_server-3] [INFO] [1795788379.485607013] [controller_server]: Optimizer reset
+[bt_navigator-8] [INFO] [1795788379.511902946] [bt_navigator]: Goal succeeded
+[mission_tree-2] [INFO] [1795788379.643774990] [mission_tree]: goal (1.7, 1.1): reached
+[planner_server-5] [ERROR] [1795788379.943179815] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788379.943285943] [planner_server]:  plugin failed to plan from (1.61, 1.20) to (-1.31, 4.36): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788379.943295453] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[planner_server-5] [ERROR] [1795788380.041632831] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788380.044033430] [planner_server]:  plugin failed to plan from (1.61, 1.20) to (-1.56, 5.56): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788380.044052867] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[planner_server-5] [ERROR] [1795788380.068862010] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788380.069915710] [planner_server]:  plugin failed to plan from (1.61, 1.20) to (-1.96, 5.61): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788380.070239853] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[mission_tree-2] [INFO] [1795788380.339271677] [mission_tree]: goal (-0.4, 3.7) score 4.43, gain 21.7 m2, path 4.9 m
+[mission_tree-2] [INFO] [1795788380.341394633] [mission_tree]: mission state EXPLORING: goal 2 at (-0.4, 3.7)
+[bt_navigator-8] [INFO] [1795788380.341838395] [bt_navigator]: Begin navigating from current location (1.61, 1.20) to (-0.41, 3.71)
+[controller_server-3] [INFO] [1795788380.366077415] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788381.418003256] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788382.418555789] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788383.467031728] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788384.466449948] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788385.466967063] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788386.516260921] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788387.516453188] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788388.283476120] [hazard_layer]: hazard map: 518 hazard cells of 17507 known-free
+[controller_server-3] [INFO] [1795788388.516306705] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788389.566250861] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788390.568270269] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788391.617452583] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788392.616277136] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788393.384966832] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 279 X 279 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788393.666339508] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788394.666266257] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788395.384985905] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 279 X 279 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788395.716335242] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788396.716316253] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788397.385447449] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 279 X 279 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788397.766322005] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788398.767041562] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788399.816261198] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788400.866339024] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788401.867513990] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788405.854426275] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788406.854456770] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788407.854445958] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788408.855097913] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788409.904564430] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788410.905017203] [controller_server]: Passing new path to controller.
+[controller_server-3] [ERROR] [1795788411.404593954] [controller_server]: Failed to make progress
+[controller_server-3] [INFO] [1795788411.405657672] [controller_server]: Optimizer reset
+[controller_server-3] [WARN] [1795788411.405712278] [controller_server]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-3] [INFO] [1795788411.423140649] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[controller_server-3] [INFO] [1795788411.427271616] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [WARN] [1795788411.563282608] [controller_server]: Control loop missed its desired rate of 20.0000 Hz. Current loop rate is 8.6957 Hz.
+[controller_server-3] [INFO] [1795788411.913818531] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788412.964453871] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788413.963529672] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788415.013662783] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788416.013970605] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788417.063596077] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788417.972404539] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 279 X 280 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788418.064297290] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788418.764465854] [hazard_layer]: hazard map: 470 hazard cells of 22221 known-free
+[controller_server-3] [INFO] [1795788419.063887762] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788420.113444161] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788421.113448798] [controller_server]: Passing new path to controller.
+[controller_server-3] [WARN] [1795788423.109294498] [controller_server]: Control loop missed its desired rate of 20.0000 Hz. Current loop rate is 500.0000 Hz.
+[controller_server-3] [INFO] [1795788423.159397120] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788424.160007013] [controller_server]: Passing new path to controller.
+[collision_monitor-11] [WARN] [1795788424.229801933] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.048000 seconds. Ignoring the source.
+[collision_monitor-11] [WARN] [1795788424.229862157] [collision_monitor]: Robot to stop due to invalid source. Either due to data not published yet, or to lack of new data received within the sensor timeout, or if impossible to transform data to base frame
+[collision_monitor-11] [WARN] [1795788424.279957237] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.088000 seconds. Ignoring the source.
+[collision_monitor-11] [INFO] [1795788424.352955743] [collision_monitor]: Robot to continue normal operation
+[controller_server-3] [WARN] [1795788424.356028523] [controller_server]: Control loop missed its desired rate of 20.0000 Hz. Current loop rate is 9.9010 Hz.
+[controller_server-3] [INFO] [1795788425.206909735] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788425.972949639] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 280 X 281 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788426.207009856] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788427.256243088] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788428.256476968] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788429.307421528] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788429.806543206] [controller_server]: Reached the goal!
+[controller_server-3] [INFO] [1795788429.807581186] [controller_server]: Optimizer reset
+[bt_navigator-8] [INFO] [1795788429.832988207] [bt_navigator]: Goal succeeded
+[mission_tree-2] [INFO] [1795788430.011496066] [mission_tree]: goal (-0.4, 3.7): reached
+[planner_server-5] [ERROR] [1795788430.283349902] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788430.283456207] [planner_server]:  plugin failed to plan from (-0.55, 3.90) to (3.59, 4.76): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788430.283474042] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[mission_tree-2] [INFO] [1795788430.485739125] [mission_tree]: goal (-3.8, 2.7) score 3.21, gain 11.5 m2, path 3.6 m
+[mission_tree-2] [INFO] [1795788430.487601158] [mission_tree]: mission state EXPLORING: goal 3 at (-3.8, 2.7)
+[bt_navigator-8] [INFO] [1795788430.487226063] [bt_navigator]: Begin navigating from current location (-0.55, 3.90) to (-3.81, 2.71)
+[controller_server-3] [INFO] [1795788430.509495536] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788431.559898534] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788432.560068200] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788433.609657588] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788434.609629893] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788435.660427612] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788436.659653367] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788437.709724067] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788441.672996161] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788442.723366372] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788443.723159055] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788444.773208202] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788445.773027026] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788446.772786927] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788447.722852607] [controller_server]: Reached the goal!
+[controller_server-3] [INFO] [1795788447.723874019] [controller_server]: Optimizer reset
+[bt_navigator-8] [INFO] [1795788447.750664376] [bt_navigator]: Goal succeeded
+[mission_tree-2] [INFO] [1795788447.787725029] [mission_tree]: goal (-3.8, 2.7): reached
+[mission_tree-2] [INFO] [1795788448.479034503] [mission_tree]: goal (-4.5, 0.8) score 4.18, gain 12.3 m2, path 2.9 m
+[mission_tree-2] [INFO] [1795788448.480812536] [mission_tree]: mission state EXPLORING: goal 4 at (-4.5, 0.8)
+[bt_navigator-8] [INFO] [1795788448.482217866] [bt_navigator]: Begin navigating from current location (-3.72, 2.77) to (-4.46, 0.76)
+[controller_server-3] [INFO] [1795788448.504320369] [controller_server]: Received a goal, begin computing control effort.
+[hazard_layer-2] [INFO] [1795788449.248588450] [hazard_layer]: hazard map: 986 hazard cells of 35753 known-free
+[controller_server-3] [INFO] [1795788449.554897802] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788450.554425435] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788451.604716261] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788452.604492836] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788453.654472945] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788454.654506969] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788455.535447056] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 281 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788455.704877504] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788456.704440241] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788457.704433554] [controller_server]: Passing new path to controller.
+[gz-1] NodeShared::Publish() Error: Interrupted system call
+[controller_server-3] [INFO] [1795788458.754615579] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788459.536290079] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 281 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788459.755208331] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788460.804855414] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788461.804649008] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788462.855283662] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788463.536457880] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 281 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788463.854619820] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788464.854446998] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788465.904621920] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788466.904881690] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788467.536544429] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 281 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788467.954501214] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788468.955092102] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788469.804788329] [controller_server]: Reached the goal!
+[controller_server-3] [INFO] [1795788469.806737740] [controller_server]: Optimizer reset
+[bt_navigator-8] [INFO] [1795788469.832622959] [bt_navigator]: Goal succeeded
+[mission_tree-2] [INFO] [1795788470.071625071] [mission_tree]: goal (-4.5, 0.8): reached
+[mission_tree-2] [INFO] [1795788470.565300388] [mission_tree]: goal (3.3, -2.6) score 1.97, gain 19.1 m2, path 9.4 m
+[bt_navigator-8] [INFO] [1795788470.567702558] [bt_navigator]: Begin navigating from current location (-4.43, 0.73) to (3.33, -2.64)
+[mission_tree-2] [INFO] [1795788470.567822328] [mission_tree]: mission state EXPLORING: goal 5 at (3.3, -2.6)
+[controller_server-3] [INFO] [1795788470.591833841] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788471.643334965] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788472.692666403] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788473.693203967] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788477.490398054] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788478.540487652] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788479.102251002] [controller_server]: Optimizer reset
+[controller_server-3] [INFO] [1795788479.109211116] [controller_server]: Optimizer reset
+[controller_server-3] [WARN] [1795788479.110015686] [controller_server]: Optimizer fail to compute path
+[mission_tree-2] [INFO] [1795788479.135301603] [mission_tree]: slam_toolbox new measurements paused
+[mission_tree-2] [INFO] [1795788479.135794045] [mission_tree]: pre-kidnap pose graph saved
+[async_slam_toolbox_node-8] [INFO] [1795788479.138186108] [slam_toolbox]: SlamToolbox: Toggled to pause taking new measurements.
+[controller_server-3] [INFO] [1795788479.540431435] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788479.661778364] [hazard_layer]: hazard map: 1134 hazard cells of 44299 known-free
+[controller_server-3] [INFO] [1795788480.590431664] [controller_server]: Passing new path to controller.
+[mission_tree-2] [WARN] [1795788480.599710230] [mission_tree]: kidnapped: scan-to-map score 0.15 (55 endpoints) for 3 checks in a row
+[mission_tree-2] [INFO] [1795788480.600822855] [mission_tree]: mission state RECOVERING: kidnapped: scan does not fit the map, searching the map for the robot
+[bt_navigator-8] [ERROR] [1795788480.626853526] [bt_navigator_navigate_to_pose_rclcpp_node]: Failed to get result for follow_path in node halt!
+[bt_navigator-8] [INFO] [1795788480.627315644] [bt_navigator]: [navigate_to_pose] [ActionServer] Client requested to cancel the goal. Cancelling.
+[bt_navigator-8] [INFO] [1795788480.627455618] [bt_navigator]: Goal canceled
+[controller_server-3] [INFO] [1795788480.642039106] [controller_server]: Cancellation was successful. Stopping the robot.
+[controller_server-3] [INFO] [1795788480.642088305] [controller_server]: [follow_path] [ActionServer] Client requested to cancel the goal. Cancelling.
+[controller_server-3] [INFO] [1795788480.642976190] [controller_server]: Optimizer reset
+[async_slam_toolbox_node-8] Save To File /tmp/rescue_prekidnap_posegraph.posegraph 
+[async_slam_toolbox_node-8] Mapper <- Module
+[async_slam_toolbox_node-8] Mapper <- m_pSequentialScanMatcher
+[async_slam_toolbox_node-8] Mapper <- m_pGraph
+[async_slam_toolbox_node-8] MapperGraph <- Graph; Graph <- m_Edges; Graph <- m_Vertices
+[async_slam_toolbox_node-8] MapperGraph <- m_pMapper; MapperGraph <- m_pLoopScanMatcher; MapperGraph <- m_pTraversal
+[async_slam_toolbox_node-8] Mapper <- m_pMapperSensorManager
+[async_slam_toolbox_node-8] MapperSensorManager <- m_ScanManagers; MapperSensorManager <- m_Scans
+[async_slam_toolbox_node-8] Mapper <- m_Listeners
+[async_slam_toolbox_node-8] **Finished serializing Mapper**
+[async_slam_toolbox_node-8] Save To File
+[async_slam_toolbox_node-8] **Serializing Dataset**
+[async_slam_toolbox_node-8] Dataset <- m_SensorNameLookup
+[async_slam_toolbox_node-8] Dataset <- m_Data
+[async_slam_toolbox_node-8] Dataset <- m_Lasers
+[async_slam_toolbox_node-8] Dataset <- m_pDatasetInfo
+[async_slam_toolbox_node-8] **Finished serializing Dataset**
+[mission_tree-2] [INFO] [1795788484.100549711] [mission_tree]: relocalization attempt 1: best (-4.42, -4.49, -2.55) score 0.89, next best elsewhere 0.58: confident
+[mission_tree-2] [INFO] [1795788484.101160420] [mission_tree]: relocalization attempt 1: candidate, driving to confirm it from another place
+[behavior_server-7] [INFO] [1795788484.104242180] [behavior_server]: Running spin
+[behavior_server-7] [INFO] [1795788484.104373258] [behavior_server]: Turning -3.00 for spin behavior.
+[behavior_server-7] [INFO] [1795788487.904878570] [behavior_server]: spin completed successfully
+[behavior_server-7] [INFO] [1795788488.199722946] [behavior_server]: Running drive_on_heading
+[behavior_server-7] [INFO] [1795788497.900192936] [behavior_server]: drive_on_heading completed successfully
+[mission_tree-2] [INFO] [1795788498.864985978] [mission_tree]: confirm drive: moved 1.23 m by odometry
+[mission_tree-2] [INFO] [1795788500.952761834] [mission_tree]: relocalization attempt 2: best (-3.37, -3.89, 0.59) score 0.94, next best elsewhere 0.53: confident
+[mission_tree-2] [INFO] [1795788500.953248838] [mission_tree]: relocalization attempt 2: candidate confirmed: matches agree with odometry within 0.06 m, 1 deg
+[async_slam_toolbox_node-8] Load From File /tmp/rescue_prekidnap_posegraph.posegraph 
+[async_slam_toolbox_node-8] Mapper <- Module
+[async_slam_toolbox_node-8] Mapper <- m_pSequentialScanMatcher
+[async_slam_toolbox_node-8] Mapper <- m_pGraph
+[async_slam_toolbox_node-8] MapperGraph <- Graph; Graph <- m_Edges; Graph <- m_Vertices
+[async_slam_toolbox_node-8] MapperGraph <- m_pMapper; MapperGraph <- m_pLoopScanMatcher; MapperGraph <- m_pTraversal
+[async_slam_toolbox_node-8] Mapper <- m_pMapperSensorManager
+[async_slam_toolbox_node-8] MapperSensorManager <- m_ScanManagers; MapperSensorManager <- m_Scans
+[async_slam_toolbox_node-8] Mapper <- m_Listeners
+[async_slam_toolbox_node-8] **Finished serializing Mapper**
+[async_slam_toolbox_node-8] Load From File
+[async_slam_toolbox_node-8] **Serializing Dataset**
+[async_slam_toolbox_node-8] Dataset <- m_SensorNameLookup
+[async_slam_toolbox_node-8] Dataset <- m_Data
+[async_slam_toolbox_node-8] Dataset <- m_Lasers
+[async_slam_toolbox_node-8] Dataset <- m_pDatasetInfo
+[async_slam_toolbox_node-8] **Finished serializing Dataset**
+[async_slam_toolbox_node-8] Unregistering sensor: Custom Described Lidar
+[async_slam_toolbox_node-8] Registering sensor: [Custom Described Lidar]
+[async_slam_toolbox_node-8] WARNING: Logging before InitGoogleLogging() is written to STDERR
+[async_slam_toolbox_node-8] W20261127 14:08:20.970652 280794 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[mission_tree-2] [INFO] [1795788501.009088120] [mission_tree]: relocalized: slam_toolbox re-seeded at (-3.37, -3.89, 0.59)
+[async_slam_toolbox_node-8] Registering sensor: [Custom Described Lidar]
+[mission_tree-2] [INFO] [1795788501.751013479] [mission_tree]: slam_toolbox new measurements resumed
+[async_slam_toolbox_node-8] [INFO] [1795788501.752095379] [slam_toolbox]: SlamToolbox: Toggled to actively taking new measurements.
+[planner_server-5] [INFO] [1795788501.980766283] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[controller_server-3] [INFO] [1795788501.982523973] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[controller_server-3] [INFO] [1795788502.912555875] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[planner_server-5] [INFO] [1795788502.913111241] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[mission_tree-2] [INFO] [1795788503.376869688] [mission_tree]: mission state EXPLORING: recovered from kidnapped
+[mission_tree-2] [INFO] [1795788503.838958109] [mission_tree]: goal (3.3, -2.6) score 2.32, gain 19.1 m2, path 8.0 m
+[bt_navigator-8] [INFO] [1795788503.841509875] [bt_navigator]: Begin navigating from current location (-3.43, -3.87) to (3.33, -2.64)
+[mission_tree-2] [INFO] [1795788503.842449992] [mission_tree]: mission state EXPLORING: goal 6 at (3.3, -2.6)
+[controller_server-3] [INFO] [1795788503.863060882] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788504.913751260] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788505.913320725] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788506.963287384] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788507.963650842] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788508.964022182] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788513.307890079] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788514.357388456] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788514.550181554] [hazard_layer]: hazard map: 1144 hazard cells of 46776 known-free
+[controller_server-3] [INFO] [1795788515.359374094] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788516.407660581] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788517.407371684] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788518.457487934] [controller_server]: Passing new path to controller.
+[async_slam_toolbox_node-8] W20261127 14:08:39.089505 280876 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[controller_server-3] [INFO] [1795788519.457344062] [controller_server]: Passing new path to controller.
+[async_slam_toolbox_node-8] W20261127 14:08:40.395226 280876 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[controller_server-3] [INFO] [1795788520.507574188] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788521.507359468] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788521.727212565] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 280 X 280 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788522.509422972] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788523.557320621] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788524.559470507] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788525.607580171] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788526.607523702] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788527.657324430] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788528.657346875] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788529.707317416] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788530.707388429] [controller_server]: Passing new path to controller.
+[async_slam_toolbox_node-8] W20261127 14:08:51.047443 280794 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[planner_server-5] [INFO] [1795788531.727881016] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 280 X 280 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788531.757648287] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788532.757802234] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788533.729385728] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 280 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788533.807522151] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788534.807998425] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788535.857641790] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788536.857565288] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788537.728692260] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 280 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788537.907432420] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788538.308108544] [controller_server]: Reached the goal!
+[controller_server-3] [INFO] [1795788538.309358061] [controller_server]: Optimizer reset
+[bt_navigator-8] [INFO] [1795788538.335996676] [bt_navigator]: Goal succeeded
+[mission_tree-2] [INFO] [1795788538.347360880] [mission_tree]: goal (3.3, -2.6): reached
+[mission_tree-2] [INFO] [1795788538.835820776] [mission_tree]: goal (4.7, -5.1) score 3.00, gain 9.6 m2, path 3.2 m
+[mission_tree-2] [INFO] [1795788538.836809696] [mission_tree]: mission state EXPLORING: goal 7 at (4.7, -5.1)
+[bt_navigator-8] [INFO] [1795788538.837729793] [bt_navigator]: Begin navigating from current location (3.29, -2.44) to (4.74, -5.15)
+[controller_server-3] [INFO] [1795788538.858895845] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788539.911759508] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788540.909079446] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788541.727494175] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 281 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788541.959006894] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788542.962871111] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788544.009398792] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788544.807550413] [hazard_layer]: hazard map: 1369 hazard cells of 62696 known-free
+[controller_server-3] [INFO] [1795788545.009473034] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788549.172898760] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788550.222713061] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788551.222689092] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788552.272687177] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788553.272708892] [controller_server]: Passing new path to controller.
+[gz-1] NodeShared::Publish() Error: Interrupted system call
+[controller_server-3] [INFO] [1795788554.272697297] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788555.272964027] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788556.322635834] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788556.823178627] [controller_server]: Reached the goal!
+[controller_server-3] [INFO] [1795788556.827644711] [controller_server]: Optimizer reset
+[bt_navigator-8] [INFO] [1795788556.852100885] [bt_navigator]: Goal succeeded
+[mission_tree-2] [INFO] [1795788556.970708046] [mission_tree]: goal (4.7, -5.1): reached
+[planner_server-5] [ERROR] [1795788557.290469684] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788557.291274938] [planner_server]:  plugin failed to plan from (4.52, -5.19) to (5.34, 3.79): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788557.291562826] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[planner_server-5] [ERROR] [1795788557.311797008] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788557.311894724] [planner_server]:  plugin failed to plan from (4.52, -5.19) to (5.69, 5.04): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788557.311902224] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[planner_server-5] [ERROR] [1795788557.363336540] [planner_server]: Failed to create a plan from potential when a legal potential was found. This shouldn't happen.
+[planner_server-5] [WARN] [1795788557.363416026] [planner_server]:  plugin failed to plan from (4.52, -5.19) to (6.14, 5.19): "Failed to create plan with tolerance of: 0.500000"
+[planner_server-5] [WARN] [1795788557.363424229] [planner_server]: [compute_path_to_pose] [ActionServer] Aborting handle.
+[mission_tree-2] [INFO] [1795788557.465243936] [mission_tree]: goal (4.0, 3.7) score 0.91, gain 8.4 m2, path 9.2 m
+[mission_tree-2] [INFO] [1795788557.466632199] [mission_tree]: mission state EXPLORING: goal 8 at (4.0, 3.7)
+[bt_navigator-8] [INFO] [1795788557.468206254] [bt_navigator]: Begin navigating from current location (4.52, -5.19) to (3.99, 3.74)
+[controller_server-3] [INFO] [1795788557.474181409] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788558.525600084] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788559.524420712] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788560.575759859] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788561.574373033] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788562.624471204] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788563.624325924] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788564.674499420] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788565.674304872] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788566.727054999] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788567.724689066] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788568.776726004] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788569.774309690] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788570.824318369] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788571.824308321] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788572.824326685] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788573.874379191] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788574.874341868] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788575.549610711] [hazard_layer]: hazard map: 1471 hazard cells of 65866 known-free
+[controller_server-3] [INFO] [1795788575.924711683] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788576.924316539] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788577.974317546] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788578.975331633] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788580.025306023] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788581.024327394] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788585.022680334] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788586.021822625] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788587.071743186] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788588.073703368] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788589.071822324] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788590.121804022] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788591.123309614] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788592.171792594] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788593.171938159] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788593.771867333] [controller_server]: Reached the goal!
+[controller_server-3] [INFO] [1795788593.772839775] [controller_server]: Optimizer reset
+[bt_navigator-8] [INFO] [1795788593.796042947] [bt_navigator]: Goal succeeded
+[mission_tree-2] [INFO] [1795788593.888345062] [mission_tree]: goal (4.0, 3.7): reached
+[mission_tree-2] [INFO] [1795788594.395236526] [mission_tree]: goal (-2.8, 4.3) score 0.32, gain 4.0 m2, path 7.3 m
+[bt_navigator-8] [INFO] [1795788594.397235201] [bt_navigator]: Begin navigating from current location (4.05, 3.72) to (-2.81, 4.34)
+[mission_tree-2] [INFO] [1795788594.401172418] [mission_tree]: mission state EXPLORING: goal 9 at (-2.8, 4.3)
+[controller_server-3] [INFO] [1795788594.420332718] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788595.470566920] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788596.470736968] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788597.520652381] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788598.521226166] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788599.570764714] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788600.571632716] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788601.620494230] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788602.670459893] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788603.670566139] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788604.670590831] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788605.720456064] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788606.253888492] [hazard_layer]: hazard map: 1420 hazard cells of 67748 known-free
+[controller_server-3] [INFO] [1795788606.770566720] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788607.772043008] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788608.821386539] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788609.820462173] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788610.870615447] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788611.870586518] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788612.920598345] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788613.970462895] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788614.971267325] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788616.020730502] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788617.021611720] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788620.796840387] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788621.846914105] [controller_server]: Passing new path to controller.
+[controller_server-3] [ERROR] [1795788621.946917423] [controller_server]: Failed to make progress
+[controller_server-3] [INFO] [1795788621.948709367] [controller_server]: Optimizer reset
+[controller_server-3] [WARN] [1795788621.949113423] [controller_server]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-3] [INFO] [1795788621.965097101] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[controller_server-3] [INFO] [1795788621.966822807] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [WARN] [1795788622.037583444] [controller_server]: Control loop missed its desired rate of 20.0000 Hz. Current loop rate is 16.9492 Hz.
+[controller_server-3] [INFO] [1795788622.887824935] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788623.887882765] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788624.888642259] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788625.937834624] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788626.938994346] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788627.937747290] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788628.987849935] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788629.987771620] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788631.037778132] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788632.038686373] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788633.087848229] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788634.087761567] [controller_server]: Passing new path to controller.
+[controller_server-3] [ERROR] [1795788634.689209757] [controller_server]: Failed to make progress
+[controller_server-3] [INFO] [1795788634.691889455] [controller_server]: Optimizer reset
+[controller_server-3] [WARN] [1795788634.691960181] [controller_server]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-3] [INFO] [1795788634.705277315] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[planner_server-5] [INFO] [1795788634.707467834] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[planner_server-5] [WARN] [1795788635.483793888] [planner_server]: Planner loop missed its desired rate of 20.0000 Hz. Current loop rate is 1.5823 Hz
+[controller_server-3] [INFO] [1795788635.485051149] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788636.535187374] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788637.535225194] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788638.176450367] [hazard_layer]: hazard map: 1437 hazard cells of 67802 known-free
+[controller_server-3] [INFO] [1795788638.585244608] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788639.585151721] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788640.635232961] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788641.635282104] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788642.685278697] [controller_server]: Passing new path to controller.
+[async_slam_toolbox_node-8] W20261127 14:10:42.985987 280794 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[planner_server-5] [INFO] [1795788643.466682639] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 281 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788643.685325953] [controller_server]: Passing new path to controller.
+[async_slam_toolbox_node-8] W20261127 14:10:44.264952 280794 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[controller_server-3] [INFO] [1795788644.735181637] [controller_server]: Passing new path to controller.
+[async_slam_toolbox_node-8] W20261127 14:10:44.901268 280876 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[async_slam_toolbox_node-8] W20261127 14:10:45.517230 280794 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[controller_server-3] [INFO] [1795788645.735158381] [controller_server]: Passing new path to controller.
+[async_slam_toolbox_node-8] W20261127 14:10:46.770237 280794 preprocessor.cc:67] Specified options.num_threads: 50 exceeds maximum available from the threading model Ceres was compiled with: 6.  Bounding to maximum number available.
+[controller_server-3] [INFO] [1795788646.786134015] [controller_server]: Passing new path to controller.
+[planner_server-5] [INFO] [1795788647.464714942] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 281 X 281 at 0.050000 m/pix
+[controller_server-3] [INFO] [1795788647.785556737] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788648.837208338] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788649.835203300] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788650.835279943] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788651.885531875] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788652.885390674] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788656.680821429] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788657.681808472] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788658.730791341] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788659.730863412] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788660.781326939] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788661.781248709] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788662.830851788] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788663.830891308] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788664.881026161] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788665.881278991] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788666.930827089] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788667.930951418] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788668.980889650] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788670.031022154] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788670.202771872] [hazard_layer]: hazard map: 1593 hazard cells of 68594 known-free
+[controller_server-3] [INFO] [1795788671.031215072] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788672.081302598] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788673.081078574] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788674.130992392] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788675.131911171] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788676.130850101] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788677.180895977] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788678.180785858] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788679.230945262] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788680.230806636] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788681.230788916] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788682.280896261] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788683.281105875] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788684.280813258] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788685.330779915] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788686.381123596] [controller_server]: Passing new path to controller.
+[controller_server-3] [ERROR] [1795788686.532630426] [controller_server]: Failed to make progress
+[controller_server-3] [INFO] [1795788686.533536227] [controller_server]: Optimizer reset
+[controller_server-3] [WARN] [1795788686.533593150] [controller_server]: [follow_path] [ActionServer] Aborting handle.
+[controller_server-3] [INFO] [1795788686.549667323] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[controller_server-3] [INFO] [1795788686.553360537] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [WARN] [1795788686.623668629] [controller_server]: Control loop missed its desired rate of 20.0000 Hz. Current loop rate is 18.8679 Hz.
+[controller_server-3] [INFO] [1795788687.374747276] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788688.424291602] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788692.539696156] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788693.539616972] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788694.539187265] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788695.589180687] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788696.589158596] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788697.639191151] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788698.639567808] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788699.689568046] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788700.689180200] [controller_server]: Passing new path to controller.
+[hazard_layer-2] [INFO] [1795788700.958506532] [hazard_layer]: hazard map: 1592 hazard cells of 68598 known-free
+[controller_server-3] [INFO] [1795788701.740144661] [controller_server]: Passing new path to controller.
+[controller_server-3] [ERROR] [1795788702.539722089] [controller_server]: Failed to make progress
+[controller_server-3] [INFO] [1795788702.541039913] [controller_server]: Optimizer reset
+[controller_server-3] [WARN] [1795788702.541261777] [controller_server]: [follow_path] [ActionServer] Aborting handle.
+[behavior_server-7] [INFO] [1795788702.555408438] [behavior_server]: Running spin
+[behavior_server-7] [INFO] [1795788702.555507298] [behavior_server]: Turning 1.57 for spin behavior.
+[behavior_server-7] [INFO] [1795788705.056072384] [behavior_server]: spin completed successfully
+[controller_server-3] [INFO] [1795788705.097037582] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-3] [INFO] [1795788706.147189541] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788707.147868911] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788708.197620149] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788709.247568822] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788710.247408790] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788711.247167784] [controller_server]: Passing new path to controller.
+[controller_server-3] [INFO] [1795788712.298180001] [controller_server]: Passing new path to controller.
+[mission_tree-2] [WARN] [1795788713.263231968] [mission_tree]: goal (-2.8, 4.3): no progress for 30 s (stuck)
+[bt_navigator-8] [ERROR] [1795788713.286343081] [bt_navigator_navigate_to_pose_rclcpp_node]: Failed to get result for follow_path in node halt!
+[bt_navigator-8] [INFO] [1795788713.288131917] [bt_navigator]: [navigate_to_pose] [ActionServer] Client requested to cancel the goal. Cancelling.
+[bt_navigator-8] [INFO] [1795788713.288268869] [bt_navigator]: Goal canceled
+[controller_server-3] [INFO] [1795788713.297264893] [controller_server]: Cancellation was successful. Stopping the robot.
+[controller_server-3] [INFO] [1795788713.297311776] [controller_server]: [follow_path] [ActionServer] Client requested to cancel the goal. Cancelling.
+[controller_server-3] [INFO] [1795788713.298695746] [controller_server]: Optimizer reset
+[mission_tree-2] [INFO] [1795788713.495394609] [mission_tree]: mission state RECOVERING: robot stuck: clearing costmaps and backing up
+[controller_server-3] [INFO] [1795788713.497143034] [local_costmap.local_costmap]: Received request to clear entirely the local_costmap
+[planner_server-5] [INFO] [1795788713.497853289] [global_costmap.global_costmap]: Received request to clear entirely the global_costmap
+[behavior_server-7] [INFO] [1795788713.971348598] [behavior_server]: Running backup
+[behavior_server-7] [INFO] [1795788717.772040542] [behavior_server]: backup completed successfully
+[mission_tree-2] [INFO] [1795788718.030488937] [mission_tree]: mission state EXPLORING: recovered from stuck
+[mission_tree-2] [INFO] [1795788723.653366881] [mission_tree]: mission state DONE: no frontier cluster above the minimum size is left
+[INFO] [1795788730.656352599] [map_saver]: 
+	map_saver lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1795788730.656463155] [map_saver]: Creating
+[INFO] [1795788730.656511652] [map_saver]: Configuring
+[INFO] [1795788730.666873017] [map_saver]: Saving map from 'map' topic to '/home/ruthik/autonomous_rescue_robot/results/phase12/runs/collapsed_confirm_teleport_seed4_20261127T140542Z/map' file
+[WARN] [1795788730.666920977] [map_saver]: Free threshold unspecified. Setting it to default value: 0.250000
+[WARN] [1795788730.666931653] [map_saver]: Occupied threshold unspecified. Setting it to default value: 0.650000
+[INFO] [1795788731.090076539] [map_io]: Received a 281 X 281 map @ 0.05 m/pix
+[INFO] [1795788731.124554913] [map_io]: Writing map occupancy data to /home/ruthik/autonomous_rescue_robot/results/phase12/runs/collapsed_confirm_teleport_seed4_20261127T140542Z/map.pgm
+[INFO] [1795788731.127383449] [map_io]: Writing map metadata to /home/ruthik/autonomous_rescue_robot/results/phase12/runs/collapsed_confirm_teleport_seed4_20261127T140542Z/map.yaml
+[INFO] [1795788731.127862784] [map_io]: Map saved
+[INFO] [1795788731.127877213] [map_saver]: Map saved successfully
+[INFO] [1795788731.131788154] [map_saver]: Destroying
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [map_stats-3]: sending signal 'SIGINT' to process[map_stats-3]
+[INFO] [mission_tree-2]: sending signal 'SIGINT' to process[mission_tree-2]
+[INFO] [frontier_selector-1]: sending signal 'SIGINT' to process[frontier_selector-1]
+[ERROR] [frontier_selector-1]: process has died [pid 281591, exit code -2, cmd '/home/ruthik/autonomous_rescue_robot/install/rescue_exploration/lib/rescue_exploration/frontier_selector --ros-args -r __node:=frontier_selector --params-file /home/ruthik/autonomous_rescue_robot/install/rescue_exploration/share/rescue_exploration/config/frontier_selector.yaml --params-file /tmp/launch_params_shg68w10 --params-file /tmp/launch_params_p9pb13jd'].
+[hazard_layer-2] [INFO] [1795788731.552805334] [hazard_layer]: hazard map: 1592 hazard cells of 68599 known-free
+[INFO] [map_stats-3]: process has finished cleanly [pid 281593]
+[INFO] [mission_tree-2]: process has finished cleanly [pid 281592]
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[smoother_server-4] [INFO] [1795788731.899884129] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[smoother_server-4] [INFO] [1795788731.899953006] [smoother_server]: Running Nav2 LifecycleNode rcl preshutdown (smoother_server)
+[smoother_server-4] [INFO] [1795788731.899994573] [smoother_server]: Deactivating
+[smoother_server-4] [INFO] [1795788731.900007946] [smoother_server]: Destroying bond (smoother_server) to lifecycle manager.
+[opennav_docking-12] [INFO] [1795788731.899884091] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[opennav_docking-12] [INFO] [1795788731.899972480] [docking_server]: Running Nav2 LifecycleNode rcl preshutdown (docking_server)
+[opennav_docking-12] [INFO] [1795788731.900026980] [docking_server]: Deactivating docking_server
+[bt_navigator-8] [INFO] [1795788731.899893115] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[bt_navigator-8] [INFO] [1795788731.899944875] [bt_navigator]: Running Nav2 LifecycleNode rcl preshutdown (bt_navigator)
+[bt_navigator-8] [INFO] [1795788731.899993689] [bt_navigator]: Deactivating
+[bt_navigator-8] [INFO] [1795788731.900014011] [bt_navigator]: Destroying bond (bt_navigator) to lifecycle manager.
+[planner_server-5] [INFO] [1795788731.899957660] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[planner_server-5] [INFO] [1795788731.900015799] [planner_server]: Running Nav2 LifecycleNode rcl preshutdown (planner_server)
+[planner_server-5] [INFO] [1795788731.900060766] [planner_server]: Deactivating
+[planner_server-5] [INFO] [1795788731.900099307] [global_costmap.global_costmap]: Deactivating
+[behavior_server-7] [INFO] [1795788731.899968989] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[behavior_server-7] [INFO] [1795788731.900009313] [behavior_server]: Running Nav2 LifecycleNode rcl preshutdown (behavior_server)
+[collision_monitor-11] [INFO] [1795788731.899980729] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[collision_monitor-11] [INFO] [1795788731.900042817] [collision_monitor]: Running Nav2 LifecycleNode rcl preshutdown (collision_monitor)
+[collision_monitor-11] [INFO] [1795788731.900080252] [collision_monitor]: Deactivating
+[collision_monitor-11] [INFO] [1795788731.900095305] [collision_monitor]: Destroying bond (collision_monitor) to lifecycle manager.
+[controller_server-3] [INFO] [1795788731.900153095] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[controller_server-3] [INFO] [1795788731.900200648] [controller_server]: Running Nav2 LifecycleNode rcl preshutdown (controller_server)
+[controller_server-3] [INFO] [1795788731.900242763] [controller_server]: Deactivating
+[controller_server-3] [INFO] [1795788731.900275842] [MPPIController]: Deactivated MPPI Controller: FollowPath
+[controller_server-3] [INFO] [1795788731.900293184] [local_costmap.local_costmap]: Deactivating
+[INFO] [lifecycle_manager-13]: sending signal 'SIGINT' to process[lifecycle_manager-13]
+[INFO] [opennav_docking-12]: sending signal 'SIGINT' to process[opennav_docking-12]
+[INFO] [collision_monitor-11]: sending signal 'SIGINT' to process[collision_monitor-11]
+[INFO] [velocity_smoother-10]: sending signal 'SIGINT' to process[velocity_smoother-10]
+[INFO] [waypoint_follower-9]: sending signal 'SIGINT' to process[waypoint_follower-9]
+[INFO] [bt_navigator-8]: sending signal 'SIGINT' to process[bt_navigator-8]
+[INFO] [behavior_server-7]: sending signal 'SIGINT' to process[behavior_server-7]
+[INFO] [route_server-6]: sending signal 'SIGINT' to process[route_server-6]
+[INFO] [planner_server-5]: sending signal 'SIGINT' to process[planner_server-5]
+[ERROR] [opennav_docking-12]: process has died [pid 281232, exit code -2, cmd '/opt/ros/jazzy/lib/opennav_docking/opennav_docking --ros-args --log-level info --ros-args -r __node:=docking_server -p use_sim_time:=True --params-file /tmp/launch_params_nnpyxzd5 -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [collision_monitor-11]: process has died [pid 281230, exit code -2, cmd '/opt/ros/jazzy/lib/nav2_collision_monitor/collision_monitor --ros-args --log-level info --ros-args -r __node:=collision_monitor -p use_sim_time:=True --params-file /tmp/launch_params_nnpyxzd5 -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [waypoint_follower-9]: process has died [pid 281224, exit code -2, cmd '/opt/ros/jazzy/lib/nav2_waypoint_follower/waypoint_follower --ros-args --log-level info --ros-args -r __node:=waypoint_follower -p use_sim_time:=True --params-file /tmp/launch_params_nnpyxzd5 -r /tf:=tf -r /tf_static:=tf_static'].
+[ERROR] [velocity_smoother-10]: process has died [pid 281228, exit code -2, cmd '/opt/ros/jazzy/lib/nav2_velocity_smoother/velocity_smoother --ros-args --log-level info --ros-args -r __node:=velocity_smoother -p use_sim_time:=True --params-file /tmp/launch_params_nnpyxzd5 -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav'].
+[INFO] [smoother_server-4]: sending signal 'SIGINT' to process[smoother_server-4]
+[INFO] [controller_server-3]: sending signal 'SIGINT' to process[controller_server-3]
+[ERROR] [route_server-6]: process has died [pid 281206, exit code -2, cmd '/opt/ros/jazzy/lib/nav2_route/route_server --ros-args --log-level info --ros-args -r __node:=route_server -p use_sim_time:=True --params-file /tmp/launch_params_nnpyxzd5 -r /tf:=tf -r /tf_static:=tf_static'].
+[INFO] [hazard_layer-2]: sending signal 'SIGINT' to process[hazard_layer-2]
+[ERROR] [behavior_server-7]: process has died [pid 281222, exit code -2, cmd '/opt/ros/jazzy/lib/nav2_behaviors/behavior_server --ros-args --log-level info --ros-args -r __node:=behavior_server -p use_sim_time:=True --params-file /tmp/launch_params_nnpyxzd5 -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav'].
+[ERROR] [smoother_server-4]: process has died [pid 281202, exit code -2, cmd '/opt/ros/jazzy/lib/nav2_smoother/smoother_server --ros-args --log-level info --ros-args -r __node:=smoother_server -p use_sim_time:=True --params-file /tmp/launch_params_nnpyxzd5 -r /tf:=tf -r /tf_static:=tf_static'].
+[INFO] [component_container-1]: sending signal 'SIGINT' to process[component_container-1]
+[velocity_smoother-10] [INFO] [1795788731.901343429] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[velocity_smoother-10] [INFO] [1795788731.901417096] [velocity_smoother]: Running Nav2 LifecycleNode rcl preshutdown (velocity_smoother)
+[velocity_smoother-10] [INFO] [1795788731.901468497] [velocity_smoother]: Deactivating
+[velocity_smoother-10] [INFO] [1795788731.901484496] [velocity_smoother]: Destroying bond (velocity_smoother) to lifecycle manager.
+[velocity_smoother-10] [INFO] [1795788731.913855563] [velocity_smoother]: Cleaning up
+[velocity_smoother-10] [INFO] [1795788731.913888969] [velocity_smoother]: Destroying bond (velocity_smoother) to lifecycle manager.
+[velocity_smoother-10] [INFO] [1795788731.965649138] [velocity_smoother]: Destroying
+[behavior_server-7] [INFO] [1795788731.900043453] [behavior_server]: Deactivating
+[behavior_server-7] [INFO] [1795788731.901461853] [behavior_server]: Destroying bond (behavior_server) to lifecycle manager.
+[behavior_server-7] [INFO] [1795788731.923872446] [behavior_server]: Cleaning up
+[behavior_server-7] [INFO] [1795788731.942904752] [behavior_server]: Destroying bond (behavior_server) to lifecycle manager.
+[behavior_server-7] [INFO] [1795788732.096747430] [behavior_server]: Destroying
+[component_container-1] [INFO] [1795788731.901558488] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[waypoint_follower-9] [INFO] [1795788731.902435046] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[waypoint_follower-9] [INFO] [1795788731.902538991] [waypoint_follower]: Running Nav2 LifecycleNode rcl preshutdown (waypoint_follower)
+[waypoint_follower-9] [INFO] [1795788731.902602206] [waypoint_follower]: Deactivating
+[waypoint_follower-9] [INFO] [1795788731.902668031] [waypoint_follower]: Destroying bond (waypoint_follower) to lifecycle manager.
+[waypoint_follower-9] [INFO] [1795788731.912872803] [waypoint_follower]: Cleaning up
+[waypoint_follower-9] [INFO] [1795788732.007627705] [waypoint_follower]: Destroying bond (waypoint_follower) to lifecycle manager.
+[waypoint_follower-9] [INFO] [1795788732.014664798] [waypoint_follower]: Destroying
+[route_server-6] [INFO] [1795788731.906533722] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[route_server-6] [INFO] [1795788731.906598853] [route_server]: Running Nav2 LifecycleNode rcl preshutdown (route_server)
+[route_server-6] [INFO] [1795788731.906663517] [route_server]: Deactivating
+[route_server-6] [INFO] [1795788731.906676790] [route_server]: Destroying bond (route_server) to lifecycle manager.
+[route_server-6] [INFO] [1795788731.922793831] [route_server]: Cleaning up
+[route_server-6] [INFO] [1795788732.027675854] [route_server]: Destroying bond (route_server) to lifecycle manager.
+[route_server-6] [INFO] [1795788732.072950867] [route_server]: Destroying
+[lifecycle_manager-13] [INFO] [1795788731.907027330] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[lifecycle_manager-13] [INFO] [1795788731.907095363] [lifecycle_manager_navigation]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_navigation)
+[lifecycle_manager-13] [INFO] [1795788731.907114143] [lifecycle_manager_navigation]: [34m[1mTerminating bond timer...[0m[0m
+[bt_navigator-8] [INFO] [1795788731.910448650] [bt_navigator]: Cleaning up
+[collision_monitor-11] [INFO] [1795788731.913570371] [collision_monitor]: Cleaning up
+[collision_monitor-11] [INFO] [1795788731.913604153] [collision_monitor]: [FootprintApproach]: Destroying Polygon
+[collision_monitor-11] [INFO] [1795788731.913614325] [collision_monitor]: [scan]: Destroying Scan
+[collision_monitor-11] [INFO] [1795788731.916399815] [collision_monitor]: Destroying bond (collision_monitor) to lifecycle manager.
+[collision_monitor-11] [INFO] [1795788731.929968523] [collision_monitor]: Destroying
+[smoother_server-4] [INFO] [1795788731.920202816] [smoother_server]: Cleaning up
+[smoother_server-4] [INFO] [1795788731.973253511] [smoother_server]: Destroying bond (smoother_server) to lifecycle manager.
+[smoother_server-4] [INFO] [1795788732.021123535] [smoother_server]: Destroying
+[opennav_docking-12] [INFO] [1795788731.952366666] [docking_server]: Destroying bond (docking_server) to lifecycle manager.
+[opennav_docking-12] [INFO] [1795788731.974886220] [docking_server]: Cleaning up docking_server
+[opennav_docking-12] [INFO] [1795788732.044156699] [docking_server]: Destroying bond (docking_server) to lifecycle manager.
+[opennav_docking-12] [INFO] [1795788732.123207880] [docking_server]: Destroying
+[controller_server-3] [INFO] [1795788731.992857983] [controller_server]: Destroying bond (controller_server) to lifecycle manager.
+[controller_server-3] [INFO] [1795788732.004137132] [controller_server]: Cleaning up
+[controller_server-3] [INFO] [1795788732.014985276] [MPPIController]: Cleaned up MPPI Controller: FollowPath
+[controller_server-3] [INFO] [1795788732.015908119] [local_costmap.local_costmap]: Cleaning up
+[component_container-1] [INFO] [1795788732.219768121] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ERROR] [hazard_layer-2]: process has died [pid 281200, exit code -2, cmd '/home/ruthik/autonomous_rescue_robot/install/rescue_mapping/lib/rescue_mapping/hazard_layer --ros-args --params-file /tmp/launch_params_zoxl7t6u --params-file /tmp/launch_params_anapvogk'].
+[planner_server-5] [INFO] [1795788732.229041598] [planner_server]: Deactivating plugin GridBased of type NavfnPlanner
+[planner_server-5] [INFO] [1795788732.229093752] [planner_server]: Destroying bond (planner_server) to lifecycle manager.
+[controller_server-3] [INFO] [1795788732.229607484] [controller_server]: Destroying bond (controller_server) to lifecycle manager.
+[controller_server-3] [INFO] [1795788732.236361319] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[planner_server-5] [INFO] [1795788732.239509278] [planner_server]: Cleaning up
+[lifecycle_manager-13] [INFO] [1795788732.239843832] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[controller_server-3] [INFO] [1795788732.242583179] [local_costmap.local_costmap]: Destroying
+[lifecycle_manager-13] [INFO] [1795788732.262031342] [lifecycle_manager_navigation]: Destroying lifecycle_manager_navigation
+[planner_server-5] [INFO] [1795788732.282587664] [global_costmap.global_costmap]: Cleaning up
+[controller_server-3] [INFO] [1795788732.304345499] [controller_server]: Destroying
+[planner_server-5] [INFO] [1795788732.307463934] [planner_server]: Cleaning up plugin GridBased of type NavfnPlanner
+[planner_server-5] [INFO] [1795788732.307608106] [planner_server]: Destroying plugin GridBased of type NavfnPlanner
+[INFO] [component_container-1]: process has finished cleanly [pid 281199]
+[planner_server-5] [INFO] [1795788732.372853471] [planner_server]: Destroying bond (planner_server) to lifecycle manager.
+[planner_server-5] [INFO] [1795788732.382536775] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[planner_server-5] [INFO] [1795788732.394030113] [global_costmap.global_costmap]: Destroying
+[planner_server-5] [INFO] [1795788732.436463331] [planner_server]: Destroying
+[INFO] [lifecycle_manager-13]: process has finished cleanly [pid 281236]
+[bt_navigator-8] [INFO] [1795788732.445353905] [bt_navigator]: Completed Cleaning up
+[bt_navigator-8] [INFO] [1795788732.445412125] [bt_navigator]: Destroying bond (bt_navigator) to lifecycle manager.
+[bt_navigator-8] [INFO] [1795788732.447503851] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[bt_navigator-8] [INFO] [1795788732.450819788] [bt_navigator]: Destroying
+[INFO] [controller_server-3]: process has finished cleanly [pid 281201]
+[INFO] [planner_server-5]: process has finished cleanly [pid 281205]
+[INFO] [bt_navigator-8]: process has finished cleanly [pid 281223]
+[INFO] [1795788732.822316751] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [1795788732.822495509] [rosbag2_recorder]: Pausing recording.
+[INFO] [1795788732.822535734] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1795788732.829880982] [rosbag2_recorder]: Recording stopped
+[INFO] [1795788732.858599028] [rosbag2_recorder]: Event publisher thread: Exited
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[async_slam_toolbox_node-8] [INFO] [1795788733.036579571] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [async_slam_toolbox_node-8]: sending signal 'SIGINT' to process[async_slam_toolbox_node-8]
+[INFO] [ekf_node-7]: sending signal 'SIGINT' to process[ekf_node-7]
+[INFO] [ground_truth_publisher-6]: sending signal 'SIGINT' to process[ground_truth_publisher-6]
+[INFO] [covariance_stamper-5]: sending signal 'SIGINT' to process[covariance_stamper-5]
+[INFO] [parameter_bridge-4]: sending signal 'SIGINT' to process[parameter_bridge-4]
+[INFO] [robot_state_publisher-2]: sending signal 'SIGINT' to process[robot_state_publisher-2]
+[INFO] [gz-1]: sending signal 'SIGINT' to process[gz-1]
+[parameter_bridge-4] [INFO] [1795788733.036641641] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ekf_node-7] [INFO] [1795788733.036649194] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[robot_state_publisher-2] [INFO] [1795788733.037127951] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[async_slam_toolbox_node-8] Unregistering sensor: Custom Described Lidar
+[parameter_bridge-4] [INFO] [1795788733.098835344] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ERROR] [ekf_node-7]: process has died [pid 280793, exit code -2, cmd '/opt/ros/jazzy/lib/robot_localization/ekf_node --ros-args -r __node:=ekf_filter_node --params-file /home/ruthik/autonomous_rescue_robot/install/rescue_bringup/share/rescue_bringup/config/ekf.yaml --params-file /tmp/launch_params_rnvr7oip'].
+[ERROR] [robot_state_publisher-2]: process has died [pid 280737, exit code -2, cmd '/opt/ros/jazzy/lib/robot_state_publisher/robot_state_publisher --ros-args --params-file /tmp/launch_params_0jrpw50j --params-file /tmp/launch_params_qwsk44fz'].
+[ERROR] [ground_truth_publisher-6]: process has died [pid 280741, exit code -2, cmd '/home/ruthik/autonomous_rescue_robot/install/rescue_simulation/lib/rescue_simulation/ground_truth_publisher --ros-args --params-file /tmp/launch_params_act9fcoj --params-file /tmp/launch_params_qm48tint'].
+[ERROR] [async_slam_toolbox_node-8]: process has died [pid 280794, exit code -2, cmd '/opt/ros/jazzy/lib/slam_toolbox/async_slam_toolbox_node --ros-args -r __node:=slam_toolbox -r __ns:=/ --params-file /home/ruthik/autonomous_rescue_robot/install/rescue_slam/share/rescue_slam/config/slam_toolbox.yaml --params-file /tmp/launch_params_0l5zpcsl'].
+[ERROR] [covariance_stamper-5]: process has died [pid 280740, exit code -2, cmd '/home/ruthik/autonomous_rescue_robot/install/rescue_simulation/lib/rescue_simulation/covariance_stamper --ros-args --params-file /tmp/launch_params_gselap_n --params-file /tmp/launch_params_ikyqi8z1'].
+[INFO] [parameter_bridge-4]: process has finished cleanly [pid 280739]
+[ERROR] [gz-1]: process[gz-1] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+[INFO] [gz-1]: sending signal 'SIGTERM' to process[gz-1]
+[ERROR] [gz-1]: process has died [pid 280736, exit code -11, cmd 'gz sim -r --seed 4 -s /home/ruthik/autonomous_rescue_robot/install/rescue_simulation/share/rescue_simulation/worlds/collapsed.sdf'].

@@ -260,14 +260,17 @@ def lost(out_csv, *bag_dirs):
                 conf.append((t, res['pose'], odom, correct, res['n_known']))
         # motion check over confident answers, in time order: first accepted pair
         accepted = None
-        for i in range(len(conf)):
-            for j in range(i):
-                ok, why = motion_consistent(conf[j][1], conf[j][2], conf[i][1], conf[i][2])
-                if ok:
-                    accepted = (conf[i][0] - t_jump, conf[j][3] and conf[i][3], why)
-                    break
-            if accepted:
-                break
+        def first_accept(min_turn):
+            for i in range(len(conf)):
+                for j in range(i):
+                    ok, why = motion_consistent(conf[j][1], conf[j][2], conf[i][1], conf[i][2],
+                                                min_turn_rad=min_turn)
+                    if ok:
+                        moved = math.hypot(conf[i][2][0] - conf[j][2][0], conf[i][2][1] - conf[j][2][1])
+                        return (conf[i][0] - t_jump, conf[j][3] and conf[i][3], f'{why}; odom travel {moved:.2f} m')
+            return None
+        accepted = first_accept(math.radians(45))       # v1.1.0 rule: >= 1 m or >= 45 deg
+        strict = first_accept(4.0)                      # translation only (a turn is not a new view)
         mine = [r for r in rows if r[0] == rid]
         n_pos = sum(r[2] for r in mine)
         n_conf_imp = sum(1 for r in mine if not r[2] and r[6])
@@ -277,13 +280,27 @@ def lost(out_csv, *bag_dirs):
         print(f'{rid}: {len(mine)} searches; possible {n_pos}; confident when possible {n_conf_pos} '
               f'(correct {n_conf_pos_ok}, first correct at +{first_ok} s); confident when impossible '
               f'{n_conf_imp}; motion-checked accept: '
-              f'{"none" if accepted is None else f"+{accepted[0]:.0f} s, correct={accepted[1]} ({accepted[2]})"}',
+              f'{"none" if accepted is None else f"+{accepted[0]:.0f} s, correct={accepted[1]} ({accepted[2]})"}'
+              f'; translation-only accept: '
+              f'{"none" if strict is None else f"+{strict[0]:.0f} s, correct={strict[1]} ({strict[2]})"}',
               flush=True)
     with open(out_csv, 'w') as f:
         f.write('run_id,t_after_teleport_s,possible,score,margin,n_known,confident,pos_error_m,correct\n')
         f.writelines(','.join(map(str, r)) + '\n' for r in rows)
 
 
+def trace(bag_dir, before_s='5', after_s='30'):
+    """Detector view around a teleport: score at the SLAM pose and endpoints on known cells, every 0.5 s."""
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'rescue_mission'))
+    from rescue_mission.relocalize import score
+    t_jump, _, _ = find_teleport(bag_dir)
+    for t, field, pts, slam, _truth in replay(bag_dir, 0.5):
+        dt = t - t_jump
+        if -float(before_s) <= dt <= float(after_s):
+            s, n = score(field, pts, slam)
+            print(f'{dt:+6.1f} s  score {s:.2f}  known endpoints {n:3d}  map known {field.known_area_m2():6.1f} m2')
+
+
 if __name__ == '__main__':
     cmd = sys.argv[1]
-    {'landing': landing, 'calibrate': calibrate, 'lost': lost}[cmd](*sys.argv[2:])
+    {'landing': landing, 'calibrate': calibrate, 'lost': lost, 'trace': trace}[cmd](*sys.argv[2:])

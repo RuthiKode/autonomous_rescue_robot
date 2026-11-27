@@ -1,0 +1,25 @@
+=== teleport collapsed seed 1 12:51:25
+[explore_eval] injected teleport: robot moved from (3.7, -2.7) to (-1.6, -5.2) (ok=True)
+[explore_eval] coverage 0.989 after 262 s; 90% at 153.3 s; stopped: mission DONE: no frontier cluster above the minimum size is left
+[explore_eval] injection teleport: recovered=False (mission DONE, coverage 0.99, 5 goals and 2 recoveries after, pose error 0.55 m (peak 7.73 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase12/runs.csv
+      1 relocalized from lost mode: saved map reloaded at (-1.05, -5.11, 0.35)
+      1 relocalization attempt 3: candidate, driving to confirm it from another place
+      1 relocalization attempt 3: best (-1.96, -5.82, 1.24) score 0.87, next best elsewhere 0.65: confident
+      1 relocalization attempt 2: candidate not confirmed: not enough motion between the two matches
+      1 relocalization attempt 2: best (-1.96, -5.82, 1.24) score 0.86, next best elsewhere 0.64: confident
+      1 relocalization attempt 1: candidate, driving to confirm it from another place
+      1 relocalization attempt 1: best (-1.86, -5.17, -3.00) score 0.93, next best elsewhere 0.52: confident
+      1 lost: no confident match; SLAM reset to a fresh map, searching the saved map every 2 s while exploring
+      1 lost: match (-1.21, -5.22) score 0.93 confirmed by an earlier match: matches agree with odometry within 0.07 m, 0 deg
+      1 lost: found on the saved map, reloading it
+      1 lost: candidate match (-2.16, -6.17) score 0.98, next best elsewhere 0.82; waiting for a second match after the robot moves
+      1 lost: candidate match (-1.71, -5.72) score 0.93, next best elsewhere 0.68; waiting for a second match after the robot moves
+      1 kidnapped: scan-to-map score 0.08
+      1 confirm drive: moved 0.68 m by odometry
+=== teleport collapsed seed 2 12:57:28
+[explore_eval] injected teleport: robot moved from (1.6, 1.2) to (-2.1, -3.6) (ok=True)
+[explore_eval] coverage 0.746 after 368 s; 90% at nan s; stopped: mission DONE: no frontier cluster above the minimum size is left
+[explore_eval] injection teleport: recovered=False (mission DONE, coverage 0.75, 11 goals and 0 recoveries after, pose error 12.11 m (peak 17.36 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase12/runs.csv
+=== teleport collapsed seed 3 13:05:45

@@ -271,3 +271,5 @@ four landed in unmapped space and were correctly not re-seeded), block 3/3, no f
 Also: MIT licence, Gazebo window script, clean `git status`, 216 tests, v1.0.0 release.
 Lost mode (`docs/PHASE11.md`): kidnaps into unmapped space. Teleport 5/5 live (final error ≤ 0.13 m),
 block 2/2, 221 tests; three live attempts, each finding and fixing a failure, are kept.
+Every re-seed confirmed by motion (`docs/PHASE12.md`): teleport 5/5 live with all 6 re-seeds
+confirmed, block 2/2, normal mission done, 233 tests; two earlier attempts kept.

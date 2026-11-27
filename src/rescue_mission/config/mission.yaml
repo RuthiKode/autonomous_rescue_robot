@@ -31,7 +31,8 @@ mission_tree:
     kidnap_low_score: 0.35       # a score below this is a "low" check ...
     kidnap_checks: 3             # ... and this many in a row is a kidnap
     kidnap_good_score: 0.5       # the search uses the last map snapshot that scored at least this
-    kidnap_min_known: 30         # scan endpoints on known cells needed to score at all
+    kidnap_min_known: 20         # scan endpoints on known cells needed to score at all (phase 12: 30 -> 20;
+                                 # a kidnap seen by only 24-28 known endpoints was missed at 30)
     kidnap_min_area_m2: 20.0     # no detection before the map has this much known area
     reloc_hit_dist_m: 0.15       # scale of the scan-to-wall distance score
     reloc_min_score: 0.85        # the best pose must score at least this ...
@@ -43,10 +44,20 @@ mission_tree:
     lost_check_s: 2.0            # search against the saved map this often (sim seconds)
     lost_min_known: 40           # endpoints on known cells of the saved map needed for a match
     lost_min_motion_m: 1.0       # two matches must be this far apart by odometry ...
-    lost_min_turn_rad: 0.785     # ... or turned this much ...
+    lost_min_turn_rad: 4.0       # ... or turned this much: 4.0 > pi = never. The lidar sees 360 deg, so a turn
+                                 # on the spot gives no new view (v1.1.0 used 0.785, i.e. 45 deg)
     lost_tol_m: 0.3              # ... and their relative pose must equal the odometry change
     lost_tol_rad: 0.175          # within these
     lost_match_window_s: 60.0    # confident matches older than this are forgotten
     lost_grace_s: 120.0          # while lost, "no frontier" this soon after the reset is not DONE
     lost_wake_backup_m: 0.4      # after the reset: back up this far and spin once to start the new map
     reloc_repeat_window_s: 90.0  # a kidnap this soon after a re-seed goes to lost mode (no single-match re-seed)
+    # Every re-seed confirmed by motion (docs/PHASE12.md): a first confident match is only a candidate;
+    # the robot turns to the most open direction, drives this far (backs up if blocked), and a second
+    # confident match must agree with the odometry between them. false = v1.1.0 direct re-seed.
+    reloc_confirm_by_motion: true
+    reloc_confirm_drive_m: 1.2
+    reloc_confirm_speed_mps: 0.15
+    reloc_jump_verify_score: 0.7  # after an unconfirmed localization jump: below this score at SLAM's own
+                                  # pose (last good map) the jump is a kidnap -> lost mode. Normal driving:
+                                  # median 0.95, 1st percentile 0.66; a snap to a wrong place: 0.40-0.55

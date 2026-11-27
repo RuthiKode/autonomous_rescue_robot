@@ -16,7 +16,7 @@ import math
 
 from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, Pose2D, PoseStamped
-from nav2_msgs.action import BackUp, NavigateToPose, Spin
+from nav2_msgs.action import BackUp, DriveOnHeading, NavigateToPose, Spin
 from nav2_msgs.srv import ClearEntireCostmap
 from nav_msgs.msg import OccupancyGrid
 import numpy as np
@@ -88,6 +88,14 @@ DEFAULT_PARAMS = {
     'lost_grace_s': 120.0,           # while lost, "no frontier" in this time after the reset is not DONE
     'lost_wake_backup_m': 0.4,       # after the reset: back up this far and spin once to start the map
     'reloc_repeat_window_s': 90.0,   # a kidnap this soon after a re-seed goes to lost mode (no single match)
+    # every re-seed confirmed by motion: a first confident match is only a candidate; the robot drives
+    # reloc_confirm_drive_m and a second confident match must agree with odometry (relocalize.py)
+    'reloc_confirm_by_motion': False,
+    'reloc_confirm_drive_m': 1.2,
+    'reloc_confirm_speed_mps': 0.15,
+    # after a localization jump the search could not confirm: below this score at SLAM's own pose
+    # (against the last good map) the jump is treated as a kidnap and lost mode starts
+    'reloc_jump_verify_score': 0.7,
 }
 
 PREKIDNAP_GRAPH = '/tmp/rescue_prekidnap_posegraph'
@@ -104,6 +112,7 @@ class Context:
         self.nav_client = ActionClient(node, NavigateToPose, 'navigate_to_pose')
         self.backup_client = ActionClient(node, BackUp, 'backup')
         self.spin_client = ActionClient(node, Spin, 'spin')
+        self.drive_client = ActionClient(node, DriveOnHeading, 'drive_on_heading')
         self.clear_clients = [
             node.create_client(ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap'),
             node.create_client(ClearEntireCostmap, '/local_costmap/clear_entirely_local_costmap')]
@@ -128,6 +137,7 @@ class Context:
         self.graph_saved = False         # the pre-kidnap pose graph is in PREKIDNAP_GRAPH
         self.lost, self.lost_snapshot, self._lost_t, self.lost_since = False, None, -1e9, -1e9
         self.last_reseed_t = -1e9        # sim time of the last SLAM re-seed (direct or from lost mode)
+        self.reloc_candidate = None      # (match pose, odom pose) waiting for a confirming match
         self.lost_matches = []           # [(sim time, match pose, odom pose)] confident, while lost
         self.lost_accept = None          # (match pose, odom pose) that passed the motion check
         self.detector = rl.KidnapDetector(
@@ -670,8 +680,10 @@ class ResumeSlam(_Step):
         c = ctx
         log = c.node.get_logger()
         self.reset_future = None
-        if (c.recovery == 'kidnapped' and not c.relocalized and c.p['lost_mode_enabled']
-                and c.graph_saved and c.reset_client.service_is_ready()):
+        if (not c.relocalized and c.p['lost_mode_enabled'] and c.graph_saved
+                and c.reset_client.service_is_ready()
+                and (c.recovery == 'kidnapped'
+                     or (c.recovery == 'localization_jump' and self.jump_unverified(c)))):
             c.lost_snapshot = c.detector.snapshot or c.field()
             c.lost, c.lost_matches, c.lost_accept, c._lost_t = True, [], None, -1e9
             c.lost_since = c.now_s()
@@ -685,6 +697,21 @@ class ResumeSlam(_Step):
         c.set_slam_paused(False)
         c.graph_saved = False
         c.detector.reset()
+
+    @staticmethod
+    def jump_unverified(c):
+        """After a map -> odom jump that the search could not confirm: does the scan still fit the last
+        good map at SLAM's new pose? A snap to a wrong place right after a kidnap scored 0.40-0.55 there
+        (phase 12, seed 4) and 0.51-0.62 (seed 5, scripts/reloc_offline.py trace) while normal driving
+        scores 0.95 (1st percentile 0.66)."""
+        f, pts, pose = c.detector.snapshot or c.field(), c.scan_points(), c.slam_pose()
+        if f is None or pts is None or pose is None:
+            return False
+        s, n = rl.score(f, pts, pose, c.p['reloc_hit_dist_m'])
+        unverified = n >= int(c.p['kidnap_min_known']) and s < c.p['reloc_jump_verify_score']
+        c.node.get_logger().info(f'after the jump: scan scores {s:.2f} at the SLAM pose ({n} endpoints): '
+                                 f'{"not verified, treating it as a kidnap" if unverified else "verified"}')
+        return unverified
 
     def done(self):
         # The reset's own pause flag does not undo the earlier pause toggle (tested live,
@@ -746,6 +773,59 @@ class LostFound(_Step):
         return True
 
 
+class ConfirmDrive(_Step):
+    """Move the robot to a second place to confirm a relocalization candidate: turn towards the most open
+    direction of the latest scan (the turn is not evidence: the lidar sees 360 degrees) and drive straight
+    reloc_confirm_drive_m. If that was cut short, turn to the most open direction 45-135 degrees to the
+    side and drive again, so the two legs add up (backing up would return towards the start). SLAM stays
+    paused; Nav2's behaviours check collisions on the local costmap (odom frame, live sensor data only)."""
+
+    def __init__(self, ctx):
+        super().__init__(ctx, 120.0)
+        p = ctx.p
+        self.start = ctx.odom_pose()
+        drive = lambda: ActionStep(ctx, ctx.drive_client,  # noqa: E731
+                                   _drive_goal(p['reloc_confirm_drive_m'], p['reloc_confirm_speed_mps']), 30.0)
+        self.steps = [lambda: self.turn_to_open(0.0, math.pi), drive,
+                      lambda: (NoStep(ctx) if self.travelled() >= p['lost_min_motion_m']
+                               else self.turn_to_open(math.radians(45), math.radians(135))),
+                      lambda: (NoStep(ctx) if self.travelled() >= p['lost_min_motion_m'] else drive())]
+        self.current = None
+
+    def turn_to_open(self, min_abs, max_abs):
+        """Spin towards the farthest scan endpoint whose bearing is min_abs..max_abs off the heading."""
+        pts = self.ctx.scan_points()
+        if pts is None or not len(pts):
+            return NoStep(self.ctx)
+        ang = np.arctan2(pts[:, 1], pts[:, 0])
+        sel = (np.abs(ang) >= min_abs) & (np.abs(ang) <= max_abs)
+        if not sel.any():
+            return NoStep(self.ctx)
+        dist = np.where(sel, np.hypot(pts[:, 0], pts[:, 1]), -1.0)
+        turn = float(ang[int(np.argmax(dist))])
+        if abs(turn) <= 0.2:
+            return NoStep(self.ctx)
+        return ActionStep(self.ctx, self.ctx.spin_client, _spin_goal(turn), 40.0)
+
+    def travelled(self):
+        now = self.ctx.odom_pose()
+        if now is None or self.start is None:
+            return 0.0
+        return math.hypot(now[0] - self.start[0], now[1] - self.start[1])
+
+    def done(self):
+        if self.timed_out():
+            return True
+        if self.current is None:
+            if not self.steps:
+                self.ctx.node.get_logger().info(f'confirm drive: moved {self.travelled():.2f} m by odometry')
+                return True
+            self.current = self.steps.pop(0)()
+        if self.current.done():
+            self.current = None
+        return False
+
+
 class Relocalize(_Step):
     """Global search on the last good map snapshot; on a confident answer, re-seed slam_toolbox there
     (serialize the pose graph, deserialize it with START_AT_GIVEN_POSE). Skipped once relocalized."""
@@ -772,9 +852,11 @@ class Relocalize(_Step):
                             f'{c.now_s() - c.last_reseed_t:.0f} s after a re-seed, not trusting a single match')
                 self.stage = 'done'
                 return True
+            confirm = c.p['reloc_confirm_by_motion']
             f, pts = c.detector.snapshot or c.field(), c.scan_points()
-            res = rl.global_search(f, pts, hit_dist_m=c.p['reloc_hit_dist_m']) if f and pts is not None \
-                else None
+            kw = {'min_known': int(c.p['lost_min_known'])} if confirm else {}
+            res = rl.global_search(f, pts, hit_dist_m=c.p['reloc_hit_dist_m'], **kw) \
+                if f is not None and pts is not None else None
             if res is None:
                 log.warning(f'relocalization attempt {self.attempt}: nothing to search')
                 self.stage = 'done'
@@ -782,7 +864,32 @@ class Relocalize(_Step):
             ok = res['score'] >= c.p['reloc_min_score'] and res['margin'] >= c.p['reloc_min_margin']
             log.info(f'relocalization attempt {self.attempt}: best ({res["pose"][0]:.2f}, {res["pose"][1]:.2f}, '
                      f'{res["pose"][2]:.2f}) score {res["score"]:.2f}, next best elsewhere '
-                     f'{res["second"]:.2f}: {"accepted" if ok else "not confident"}')
+                     f'{res["second"]:.2f}: {"confident" if ok else "not confident"}')
+            if confirm:
+                # No re-seed on a single match: a first confident match becomes a candidate, the robot
+                # drives to another place (ConfirmDrive), and a second confident match must agree with
+                # the odometry between them (an alias does not move with the robot).
+                odom, cand = c.odom_pose(), c.reloc_candidate
+                c.reloc_candidate = None
+                if cand is None:
+                    if ok and odom is not None:
+                        c.reloc_candidate = (res['pose'], odom)
+                        log.info(f'relocalization attempt {self.attempt}: candidate, driving to confirm it '
+                                 'from another place')
+                    self.stage = 'done'
+                    return True
+                if not ok or odom is None:
+                    log.info(f'relocalization attempt {self.attempt}: candidate not confirmed '
+                             '(no confident match after the drive)')
+                    self.stage = 'done'
+                    return True
+                good, why = rl.motion_consistent(cand[0], cand[1], res['pose'], odom, c.p['lost_min_motion_m'],
+                                                 c.p['lost_min_turn_rad'], c.p['lost_tol_m'], c.p['lost_tol_rad'])
+                log.info(f'relocalization attempt {self.attempt}: candidate {"confirmed" if good else "not confirmed"}: '
+                         f'{why}')
+                if not good:
+                    self.stage = 'done'
+                    return True
             if not ok or not c.serialize_client.service_is_ready():
                 self.stage = 'done'
                 return True
@@ -845,12 +952,26 @@ def plan_recovery(ctx, reason):
         # way: slam_toolbox's own scan matcher can snap to a wrong place right after a kidnap.
         # If there is no confident answer, spin for a different view and search once more; if that
         # fails too, resume SLAM and carry on as before.
-        ctx.relocalized = False
+        ctx.relocalized, ctx.reloc_candidate = False, None
         spin_if_needed = lambda: (NoStep(ctx) if ctx.relocalized else  # noqa: E731
                                   ActionStep(ctx, ctx.spin_client, _spin_goal(p['rescan_rad']), 40.0))
+        if p['reloc_confirm_by_motion']:
+            # search; with a candidate: drive and confirm it; without one: spin for a new view, search,
+            # and if that gives a candidate: drive and confirm it
+            def move(first):
+                if ctx.relocalized:
+                    return NoStep(ctx)
+                if ctx.reloc_candidate is not None:
+                    return ConfirmDrive(ctx)
+                return spin_if_needed() if first else NoStep(ctx)
+            steps = [lambda: StopRobot(ctx), lambda: PauseSlam(ctx), lambda: Relocalize(ctx, 1),
+                     lambda: move(True), lambda: Relocalize(ctx, 2), lambda: move(False),
+                     lambda: Relocalize(ctx, 3)]
+        else:
+            steps = [lambda: StopRobot(ctx), lambda: PauseSlam(ctx), lambda: Relocalize(ctx, 1), spin_if_needed,
+                     lambda: Relocalize(ctx, 2)]
         # (after ResumeSlam: if lost mode started, move so the fresh SLAM map gets its first nodes)
-        return [lambda: StopRobot(ctx), lambda: PauseSlam(ctx), lambda: Relocalize(ctx, 1), spin_if_needed,
-                lambda: Relocalize(ctx, 2), lambda: ResumeSlam(ctx), clear] + wake + [clear]
+        return steps + [lambda: ResumeSlam(ctx), clear] + wake + [clear]
     if reason == 'localization_jump':
         spin = lambda: ActionStep(ctx, ctx.spin_client, _spin_goal(p['rescan_rad']), 40.0)  # noqa: E731
         return [lambda: StopRobot(ctx), spin, clear]
@@ -863,6 +984,14 @@ def _spin_goal(angle):
     g = Spin.Goal()
     g.target_yaw = float(angle)
     g.time_allowance = Duration(seconds=30).to_msg()
+    return g
+
+
+def _drive_goal(distance, speed):
+    g = DriveOnHeading.Goal()
+    g.target = Point(x=abs(float(distance)))
+    g.speed = float(speed)
+    g.time_allowance = Duration(seconds=25).to_msg()
     return g
 
 

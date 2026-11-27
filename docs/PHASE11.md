@@ -173,8 +173,13 @@ bash scripts/phase11_summary.sh       # per-run landing share, time lost, verdic
 - **The direct path still trusts a single match on the first kidnap of an episode.** Attempt 3 showed
   that an alias can pass 0.85 / 0.15. Only the repeat guard (a second kidnap within 90 s) catches
   that case. Routing every re-seed through the motion check would be safer, at the cost of slower
-  recovery.
-- **The repeat guard was never triggered live.** No final-batch run had a second kidnap soon after a
+  recovery. *Done in phase 12 (`docs/PHASE12.md`).*
+- **The motion check accepted rotation-only pairs.** With the turn alternative on (45°), 3 of the 8
+  offline accepts had 0.00 m of travel between the two matches. A 360° lidar sees the same scan,
+  rotated, after a turn on the spot, so those accepts tested nothing (all 8 were correct anyway).
+  *Phase 12 requires translation.*
+- **The repeat guard was never triggered live** in this batch. *It fired, correctly, in phase 12
+  (teleport 2).* No final-batch run had a second kidnap soon after a
   re-seed. It is covered by unit tests only (`test/test_reloc_guard.py`): a kidnap 30 s after a
   re-seed skips the single-match search, one 120 s after searches as usual, and the guard is off
   without lost mode.
