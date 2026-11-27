@@ -269,3 +269,5 @@ The riskiest items are the Gazebo GUI under WSL2, narrow-gap navigation and dete
 Kidnap detection and global relocalization (`docs/PHASE10.md`): teleport 1/5 live (from 0/5; the other
 four landed in unmapped space and were correctly not re-seeded), block 3/3, no false alarms.
 Also: MIT licence, Gazebo window script, clean `git status`, 216 tests, v1.0.0 release.
+Lost mode (`docs/PHASE11.md`): kidnaps into unmapped space. Teleport 5/5 live (final error ≤ 0.13 m),
+block 2/2, 218 tests; three live attempts, each finding and fixing a failure, are kept.

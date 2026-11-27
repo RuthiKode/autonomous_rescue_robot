@@ -159,9 +159,9 @@ bash scripts/phase10_tests.sh                                       # live tests
 ```
 
 ## Known issues
-- **Kidnaps into unmapped space are not recovered.** The robot keeps a wrong pose (4.6-9.9 m in
-  seeds 2-5). The next step is a "lost" mode: keep searching periodically while exploring
-  cautiously, and re-seed when the scan first matches the map with confidence.
+- **Kidnaps into unmapped space are not recovered by this phase alone.** The robot keeps a wrong pose
+  (4.6-9.9 m in seeds 2-5). Lost mode (`docs/PHASE11.md`) addresses this: 5 of 5 live teleports
+  recovered.
 - **Small sample:** 5 teleports, 3 blocks and 2 normal missions in one world (collapsed) live; rooms
   and open_plan were checked offline for false alarms only (0 in 5,041 scans).
 - **Thresholds come from 16 recorded missions.** Rooms-like symmetric maps could still give a

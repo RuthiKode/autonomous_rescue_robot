@@ -20,6 +20,7 @@ deviations and known issues.
 | 11 | ablations, README, tests, CI | README; 211 tests pass locally; CI passes on GitHub (first run 2026-11-25); ablations limited to the sweep's two (verification, fine-tuning) | below |
 | 12 | write-up, resume claims traced | this file, `docs/RESUME_CLAIMS.md` | |
 | after | kidnap recovery (week-8 gap) | live: detection 5/5, no false alarm in 5 kidnap-free missions; **teleport 1/5 recovered** (the one landing in mapped space; 4 landed in unmapped space and were correctly not re-seeded); block 3/3 | `docs/PHASE10.md` |
+| after | lost mode (unmapped kidnaps) | **teleport 5/5 recovered** (≤ 0.13 m, 4 via lost mode); block 2/2; normal mission 1.00 coverage; offline 9/9 motion-confirmed matches correct | `docs/PHASE11.md` |
 
 ## Main findings
 1. **Detection quality comes from the domain-specific fine-tune.** Paired recall gain +0.61 (95 % CI +0.39 to
@@ -31,9 +32,14 @@ deviations and known issues.
 4. **Close-range verification, as tuned, hurts recall** (-0.22, CI -0.41 to -0.03): too few close views before
    the mission ends. Lowering `verify_views` or allowing more visits is the next thing to test.
 5. **Localization is the main weakness.**
-   - **Kidnap:** recovery was 0/5 in week 8. With a scan-to-map check, a global search and a
-     slam_toolbox re-seed (`docs/PHASE10.md`), a kidnap into mapped space is recovered (0.11 m).
-     A kidnap into unmapped space is still not recovered: 4 of 5 live teleports landed there.
+   - **Kidnap:** recovery was 0/5 in week 8.
+     - A scan-to-map check, a global search and a slam_toolbox re-seed recovered kidnaps into mapped
+       space (phase 10: 1/5).
+     - Lost mode then handled kidnaps into unmapped space: SLAM restarts and the robot keeps
+       exploring, and a match counts only when two matches agree with odometry. Phase 11: **5/5**
+       live, final error ≤ 0.13 m.
+     - Getting there took three live attempts. One showed that a single confident match can be an
+       alias.
    - **Rooms world:** large SLAM errors in its narrow doors (ATE up to 1.5 m mean for some
      conditions).
 
@@ -50,10 +56,16 @@ hazard weight, gain radius, `min_gain_m2`, verification thresholds.
 - Develop against recorded bags first. The kidnap detector and search were calibrated on 16 bags with
   ground truth in minutes. The one live failure mode the bags could not show (slam_toolbox snapping
   to a wrong place on its own) was caught on the first live run and fixed.
+- One confident answer is not evidence, two that agree with the robot's own motion are: an alias does
+  not move with the robot. Offline, that rule turned 27 wrong single answers into 0 wrong accepts.
+- Smoke tests must exercise the thing that matters. The first reset test held the robot still, so it
+  could not show that slam_toolbox stops mapping after a reset while a pause toggle is still set; the
+  live run did.
 
 ## What next
-- A "lost" mode for kidnaps into unmapped space: keep searching while exploring, and re-seed at the
-  first confident match.
+- Send every re-seed through the motion check, not only those in lost mode (one live alias passed the
+  single-match thresholds).
+- A timeout for lost mode, and keeping the map explored while lost instead of discarding it.
 - Tune the verification thresholds.
 - More seeds (resume `scripts/sweep.sh 1 10`).
 - A hazard/doorway-aware SLAM configuration for rooms.

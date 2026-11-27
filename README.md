@@ -51,11 +51,19 @@ From the evaluation sweep, 60 runs, 3-5 seeds per cell (`docs/PHASE8.md`, tables
     in mapped space; the other 4 landed in unmapped space, where the robot correctly refused to
     re-seed.
   - **No regression:** blocked corridor 3 of 3, still no false alarms.
-- 216 unit/integration tests pass (`colcon test`, simulation tests skipped).
+- Lost mode for kidnaps into unmapped space (`docs/PHASE11.md`):
+  - **How it works:** SLAM restarts on a fresh map and the robot keeps exploring. The scan is searched
+    against the saved old map, and a match is accepted only when two confident matches taken after
+    real motion agree with odometry. The old map is then reloaded at that pose.
+  - **Live:** **5 of 5** teleports recovered (final error 0.00-0.13 m; 4 via lost mode, lost for
+    31-175 s), with no wrong re-seed. Block 2 of 2, and the normal mission finished at 1.00 coverage.
+  - **Offline:** on 10 unrecovered teleport recordings, 9 of 9 motion-confirmed matches were correct;
+    none of the 27 wrong single answers passed the motion check.
+- 218 unit/integration tests pass (`colcon test`, simulation tests skipped).
 
 ## Limitations
-- A kidnap into space the robot has not mapped yet is not recovered: the pose stays 4.6-9.9 m wrong
-  (4 of 5 live teleports). Kidnaps into mapped space are recovered.
+- Kidnap recovery is tested on 5 live teleports in one world (`docs/PHASE11.md`); getting there took
+  three live attempts, each of which found and fixed a failure (all kept and documented).
 - The rooms world is weak for every explorer: ATE 0.4-1.5 m, map IoU 0.48-0.81, 3.5-5.2 recoveries per run (own mission).
 - 3-5 seeds per condition, not the planned 10 (the sweep lost most of its time to simulator and DDS leaks,
   `docs/PHASE8.md`); most comparisons are not statistically separated.
@@ -98,7 +106,7 @@ YOLO runs in its own venv (`~/venvs/yolo`, Ultralytics with CUDA).
 | `src/rescue_exploration`, `rescue_mission` | frontier selector, mission behaviour tree |
 | `src/rescue_eval` | evaluation harness, metrics, failure injection |
 | `src/rescue_bringup` | launch files (sim, mapping, full mission) |
-| `docs/PHASE1..10.md` | per-phase results, reproduction commands, deviations, known issues |
+| `docs/PHASE1..11.md` | per-phase results, reproduction commands, deviations, known issues |
 | `docs/REPORT.md`, `docs/RESUME_CLAIMS.md` | final write-up; claims with their sources |
 | `foxglove/` | Foxglove layout (`docs/FOXGLOVE.md`) |
 

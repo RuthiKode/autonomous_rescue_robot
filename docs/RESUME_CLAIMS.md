@@ -12,11 +12,12 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
 - Built an own frontier selector and mission behaviour tree with recovery branches; missions finish on their
   own in 75-100 % of runs and recover from a blocked corridor in 5 of 5 scripted tests.
 - Added kidnap detection and global relocalization (scan-to-map scoring, grid search over the SLAM map,
-  slam_toolbox pose-graph re-seed). Thresholds were tuned offline on 16 recorded missions. In live tests
-  it detected 5 of 5 kidnaps with no false alarm in 5 kidnap-free missions. It refuses to commit when
-  the match is ambiguous, and made no wrong re-seed.
+  slam_toolbox pose-graph re-seed) plus a "lost mode" for kidnaps into unmapped space. In lost mode,
+  SLAM restarts and the robot keeps exploring; a match is accepted only when two confident matches
+  agree with the odometry between them. Recovered 5 of 5 live kidnapped-robot tests (final error
+  ≤ 0.13 m), up from 0 of 5.
 - Built a seeded evaluation harness (coverage, map IoU, ATE, pin precision/recall, failure injection) and
-  generated every results table from CSV; 216 automated tests.
+  generated every results table from CSV; 218 automated tests.
 
 ## Sources
 | claim | number | source |
@@ -29,14 +30,17 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
 | missions finish themselves | DONE share 0.75-1.00, own conditions | `docs/results/summary.md` (mission DONE) |
 | kidnap detection, live (held out) | 5 of 5 teleports detected; 0 kidnap flags in 3 block + 2 normal missions (collapsed, rooms) | `docs/PHASE10.md`, `results/phase10/runs/*/launch.log` |
 | kidnap detection, calibration set (not held out: thresholds chosen on it) | 5 of 5 detected, 0 flags in 8,072 normal scans (3 worlds) | `docs/PHASE10.md`, `results/reloc_offline/scores.csv` |
-| no wrong re-seed live | 1 re-seed (error 0.11 m), 4 refusals, 0 wrong | `docs/PHASE10.md`, `results/phase10/runs/*/launch.log` |
+| kidnapped robot recovered | 5 of 5, final error 0.00-0.13 m, 4 via lost mode (final batch) | `docs/PHASE11.md`, `results/phase11/runs/*/injection.json` |
+| progression | week 8: 0/5; phase 10: 1/5; phase 11: 5/5 | `docs/PHASE7.md`, `docs/PHASE10.md`, `docs/PHASE11.md` |
+| motion check offline | 9 of 9 accepted matches correct; 0 of 27 wrong single answers accepted | `docs/PHASE11.md`, `results/lost_offline/searches.csv` |
 | blocked corridor | 5 of 5 recovered | `docs/PHASE7.md`, `results/failure_tests/runs/*/injection.json` |
-| tests | 216 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-27 |
+| tests | 218 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-27 |
 
 ## Do not claim
 - That the own selector beats explore_lite (difference -35 s to 90 %, CI -113 to +42 s: not separated).
 - That verification improves precision (-0.08, CI -0.28 to +0.12) — it lowered recall.
-- General recovery from kidnapping. It works only when the robot lands in mapped space: 1 of 5 live
-  teleports recovered, and 4 landed in unmapped space (`docs/PHASE10.md`).
+- That kidnap recovery never makes a wrong re-seed. Before the repeat guard, one live run re-seeded on a
+  confident alias and looped (`docs/PHASE11.md`, attempt 3). The 5/5 is one batch of 5 in one world,
+  after three attempts that each changed the code.
 - "10+ seeds" (3-5 per cell were completed).
 - Real-robot results (simulation only).
