@@ -44,3 +44,7 @@ results/phase5*/bags/
 results/phase4/bags/
 build_dev/
 install_dev/
+
+# Everything else under results/ is run output (logs, bags, scratch experiments, 47 GB here).
+# Result tables that are already tracked stay tracked; add a new one deliberately with `git add -f`.
+results/
