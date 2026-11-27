@@ -3,7 +3,8 @@
 Root: a priority selector, re-evaluated at every tick, children in this order:
 
   TimeLimit  the sim-time limit is reached           -> Finish (DONE)
-  Recover    a recovery is pending (stuck, jump)     -> clear costmaps / back up / re-scan
+  Recover    a recovery is pending (stuck, jump,     -> clear costmaps / back up / re-scan /
+             kidnapped)                                 global relocalization (relocalize.py)
   Verify     a pin is waiting for a closer look      -> drive to a viewpoint, dwell
   Explore    ask the frontier selector, drive there  (a failed goal is recorded, not fatal)
   Finish     nothing left to do                      -> DONE, or FAILED with a reason
@@ -14,7 +15,7 @@ that logic, the frontier selector service and Nav2's actions.
 import math
 
 from action_msgs.msg import GoalStatus
-from geometry_msgs.msg import Point, PoseStamped
+from geometry_msgs.msg import Point, Pose2D, PoseStamped
 from nav2_msgs.action import BackUp, NavigateToPose, Spin
 from nav2_msgs.srv import ClearEntireCostmap
 from nav_msgs.msg import OccupancyGrid
@@ -23,13 +24,16 @@ import py_trees
 from py_trees.common import Status
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
-from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.qos import DurabilityPolicy, qos_profile_sensor_data, QoSProfile, ReliabilityPolicy
 from rclpy.time import Time
 from rescue_msgs.msg import MissionState, SurvivorArray
 from rescue_msgs.srv import SelectFrontier as SelectFrontierSrv
+from sensor_msgs.msg import LaserScan
+from slam_toolbox.srv import DeserializePoseGraph, Pause, SerializePoseGraph
 import tf2_ros
 
 from rescue_mission import logic as lg
+from rescue_mission import relocalize as rl
 from rescue_mission.viewpoints import choose_viewpoint
 
 LATCHED = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
@@ -59,6 +63,17 @@ DEFAULT_PARAMS = {
     'verify_max_attempts': 2,
     'verify_dwell_s': 6.0,           # sim seconds spent at the viewpoint
     'verify_radii_m': [1.5, 1.75, 2.0],
+    # kidnap detection and global relocalization (relocalize.py, docs/PHASE10.md)
+    'relocalization_enabled': False,
+    'kidnap_check_s': 0.5,           # the scan is scored against the map this often (sim seconds)
+    'kidnap_low_score': 0.35,        # a score below this is a "low" check ...
+    'kidnap_checks': 3,              # ... and this many low checks in a row is a kidnap
+    'kidnap_good_score': 0.5,        # the map snapshot used for the search is the last one scoring this
+    'kidnap_min_known': 30,          # scan endpoints on known cells needed to score at all
+    'kidnap_min_area_m2': 20.0,      # no detection before the map has this much known area
+    'reloc_hit_dist_m': 0.15,        # scale of the scan-to-wall distance score
+    'reloc_min_score': 0.85,         # the best pose must score at least this ...
+    'reloc_min_margin': 0.15,        # ... and beat the best pose elsewhere (>= 1 m away) by this
 }
 
 
@@ -90,6 +105,22 @@ class Context:
         self.active_handle = None        # Nav2 goal handle being followed
         self._last = (None, None)
         self._mo, self._mo_t = None, -1e9
+        # kidnap detection / relocalization
+        self.scan_msg, self.sensor_pose = None, None
+        self._field, self._field_stamp, self._kid_t = None, None, -1e9
+        self.slam_paused, self.relocalized = False, False
+        self.detector = rl.KidnapDetector(
+            self.p['kidnap_low_score'], int(self.p['kidnap_checks']), int(self.p['kidnap_min_known']),
+            self.p['kidnap_min_area_m2'], self.p['kidnap_good_score'])
+        if self.p['relocalization_enabled']:
+            node.create_subscription(LaserScan, '/scan', self._on_scan, qos_profile_sensor_data)
+            self.pause_client = node.create_client(Pause, '/slam_toolbox/pause_new_measurements')
+            self.serialize_client = node.create_client(SerializePoseGraph, '/slam_toolbox/serialize_map')
+            self.deserialize_client = node.create_client(DeserializePoseGraph,
+                                                         '/slam_toolbox/deserialize_map')
+
+    def _on_scan(self, msg):
+        self.scan_msg = msg
 
     def _on_map(self, msg):
         self.map_msg = msg
@@ -128,11 +159,77 @@ class Context:
         if self.active_handle is not None:
             self.active_handle.cancel_goal_async()
 
+    def slam_pose(self):
+        try:
+            t = self.tf_buffer.lookup_transform('map', 'base_link', Time(), Duration(seconds=0.1))
+        except tf2_ros.TransformException:
+            return None
+        q = t.transform.rotation
+        return (t.transform.translation.x, t.transform.translation.y,
+                math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z)))
+
+    def scan_points(self):
+        """Latest scan endpoints in the base_link frame, or None."""
+        s = self.scan_msg
+        if s is None:
+            return None
+        if self.sensor_pose is None:
+            try:
+                t = self.tf_buffer.lookup_transform('base_link', s.header.frame_id, Time(),
+                                                    Duration(seconds=0.1))
+            except tf2_ros.TransformException:
+                return None
+            q = t.transform.rotation
+            self.sensor_pose = (t.transform.translation.x, t.transform.translation.y,
+                                math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z)))
+        return rl.scan_points(s.ranges, s.angle_min, s.angle_increment, s.range_min, s.range_max,
+                              self.sensor_pose)
+
+    def field(self):
+        """relocalize.Field of the latest /map (rebuilt only when the map changes)."""
+        if self.map_msg is None:
+            return None
+        stamp = (self.map_msg.header.stamp.sec, self.map_msg.header.stamp.nanosec)
+        if stamp != self._field_stamp:
+            self._field, self._field_stamp = rl.Field.from_msg(self.map_msg), stamp
+        return self._field
+
+    def set_slam_paused(self, paused):
+        """slam_toolbox's pause service is a toggle: call it only when the state must change."""
+        if paused != self.slam_paused and self.pause_client.service_is_ready():
+            self.pause_client.call_async(Pause.Request())
+            self.slam_paused = paused
+            self.node.get_logger().info(f'slam_toolbox new measurements {"paused" if paused else "resumed"}')
+
+    def check_kidnap(self, now):
+        """Score the scan at the SLAM pose; pause SLAM on a low score, request a recovery on a kidnap."""
+        if now - self._kid_t < self.p['kidnap_check_s'] or self.recovery is not None:
+            return
+        self._kid_t = now
+        f, pts, pose = self.field(), self.scan_points(), self.slam_pose()
+        if f is None or pts is None or pose is None:
+            return
+        kidnapped, s, n = self.detector.update(f, pts, pose, self.p['reloc_hit_dist_m'])
+        if self.detector.low_count > 0:
+            # stop slam_toolbox from drawing the scans at a wrong pose while we find out
+            self.set_slam_paused(True)
+        elif self.slam_paused:
+            self.set_slam_paused(False)
+        if kidnapped:
+            self.node.get_logger().warning(
+                f'kidnapped: scan-to-map score {s:.2f} ({n} endpoints) for '
+                f'{self.detector.low_count} checks in a row')
+            self.request_recovery('kidnapped')
+            self.cancel_active_goal()
+
     def poll(self, _tree=None):
-        """Runs before every tick: watches map -> odom for a localization jump."""
+        """Runs before every tick: watches map -> odom for a localization jump, and (when enabled)
+        the scan-to-map score for a kidnap."""
         if not self.p['recovery_enabled']:
             return
         now = self.now_s()
+        if self.p['relocalization_enabled']:
+            self.check_kidnap(now)
         if now - self._mo_t < self.p['jump_check_s']:
             return
         try:
@@ -465,12 +562,111 @@ class StopRobot(_Step):
         return self.ctx.now_s() - self.t0 > 1.0
 
 
+class NoStep(_Step):
+    def __init__(self, ctx):
+        super().__init__(ctx, 0.0)
+
+    def done(self):
+        return True
+
+
+class ResumeSlam(NoStep):
+    """Let slam_toolbox take new measurements again (it was paused by the kidnap check)."""
+
+    def __init__(self, ctx):
+        super().__init__(ctx)
+        ctx.set_slam_paused(False)
+        ctx.detector.reset()
+
+
+class PauseSlam(NoStep):
+    """Freeze the SLAM map while the robot is being relocalized."""
+
+    def __init__(self, ctx):
+        super().__init__(ctx)
+        ctx.set_slam_paused(True)
+
+
+class Relocalize(_Step):
+    """Global search on the last good map snapshot; on a confident answer, re-seed slam_toolbox there
+    (serialize the pose graph, deserialize it with START_AT_GIVEN_POSE). Skipped once relocalized."""
+
+    def __init__(self, ctx, attempt):
+        super().__init__(ctx, 30.0)
+        self.attempt, self.stage, self.future, self.pose = attempt, 'search', None, None
+        if ctx.relocalized:
+            self.stage = 'done'
+
+    def done(self):
+        c = self.ctx
+        if self.stage == 'done' or self.timed_out():
+            return True
+        log = c.node.get_logger()
+        if self.stage == 'search':
+            if c.now_s() - self.t0 < 1.0:          # a fresh scan from the stopped robot
+                return False
+            f, pts = c.detector.snapshot or c.field(), c.scan_points()
+            res = rl.global_search(f, pts, hit_dist_m=c.p['reloc_hit_dist_m']) if f and pts is not None \
+                else None
+            if res is None:
+                log.warning(f'relocalization attempt {self.attempt}: nothing to search')
+                self.stage = 'done'
+                return True
+            ok = res['score'] >= c.p['reloc_min_score'] and res['margin'] >= c.p['reloc_min_margin']
+            log.info(f'relocalization attempt {self.attempt}: best ({res["pose"][0]:.2f}, {res["pose"][1]:.2f}, '
+                     f'{res["pose"][2]:.2f}) score {res["score"]:.2f}, next best elsewhere '
+                     f'{res["second"]:.2f}: {"accepted" if ok else "not confident"}')
+            if not ok or not c.serialize_client.service_is_ready():
+                self.stage = 'done'
+                return True
+            cur = c.slam_pose()
+            if cur is not None and math.hypot(cur[0] - res['pose'][0], cur[1] - res['pose'][1]) < 0.5 \
+                    and abs((cur[2] - res['pose'][2] + math.pi) % (2 * math.pi) - math.pi) < 0.3:
+                log.info('relocalization: SLAM pose already agrees with the search, no re-seed')
+                c.relocalized = True
+                self.stage = 'done'
+                return True
+            self.pose = res['pose']
+            req = SerializePoseGraph.Request()
+            req.filename = '/tmp/rescue_reloc_posegraph'
+            self.future, self.stage = c.serialize_client.call_async(req), 'serialize'
+            return False
+        if not self.future.done():
+            return False
+        if self.stage == 'serialize':
+            req = DeserializePoseGraph.Request()
+            req.filename = '/tmp/rescue_reloc_posegraph'
+            req.match_type = DeserializePoseGraph.Request.START_AT_GIVEN_POSE
+            req.initial_pose = Pose2D(x=self.pose[0], y=self.pose[1], theta=self.pose[2])
+            self.future, self.stage = c.deserialize_client.call_async(req), 'deserialize'
+            return False
+        # deserialized: SLAM restarts at the new pose. The jump in map -> odom is deliberate,
+        # and a successful relocalization counts as progress for the recovery counter.
+        c.relocalized = True
+        c._mo = None
+        c.logic.consecutive_recoveries = 0
+        log.info(f'relocalized: slam_toolbox re-seeded at ({self.pose[0]:.2f}, {self.pose[1]:.2f}, '
+                 f'{self.pose[2]:.2f})')
+        self.stage = 'done'
+        return True
+
+
 def plan_recovery(ctx, reason):
     """The steps of a recovery, as factories (each starts its step when called)."""
     p = ctx.p
     clear = lambda: ClearCostmaps(ctx)  # noqa: E731
     if reason == 'no_path':
         return [clear]
+    if reason == 'kidnapped' or (reason == 'localization_jump' and p['relocalization_enabled']):
+        # Search where the scan fits the last good map. A jump of map -> odom is checked the same
+        # way: slam_toolbox's own scan matcher can snap to a wrong place right after a kidnap.
+        # If there is no confident answer, spin for a different view and search once more; if that
+        # fails too, resume SLAM and carry on as before.
+        ctx.relocalized = False
+        spin_if_needed = lambda: (NoStep(ctx) if ctx.relocalized else  # noqa: E731
+                                  ActionStep(ctx, ctx.spin_client, _spin_goal(p['rescan_rad']), 40.0))
+        return [lambda: StopRobot(ctx), lambda: PauseSlam(ctx), lambda: Relocalize(ctx, 1), spin_if_needed,
+                lambda: Relocalize(ctx, 2), lambda: ResumeSlam(ctx), clear]
     if reason == 'localization_jump':
         spin = lambda: ActionStep(ctx, ctx.spin_client, _spin_goal(p['rescan_rad']), 40.0)  # noqa: E731
         return [lambda: StopRobot(ctx), spin, clear]
@@ -509,7 +705,9 @@ class DoRecovery(py_trees.behaviour.Behaviour):
         c.set_state('RECOVERING', {'no_path': 'no frontier has a path: clearing the costmaps',
                                    'stuck': 'robot stuck: clearing costmaps and backing up',
                                    'localization_jump': 'localization jump: stopping and '
-                                                        're-scanning'}.get(self.reason, self.reason))
+                                                        're-scanning',
+                                   'kidnapped': 'kidnapped: scan does not fit the map, searching the '
+                                                'map for the robot'}.get(self.reason, self.reason))
 
     def update(self):
         c = self.ctx

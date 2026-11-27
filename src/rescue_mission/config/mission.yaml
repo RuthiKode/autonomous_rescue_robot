@@ -24,3 +24,15 @@ mission_tree:
     verify_max_attempts: 2       # visits per pin
     verify_dwell_s: 6.0          # sim seconds spent at the viewpoint
     verify_radii_m: [1.5, 1.75, 2.0]   # viewpoint distances from the pin
+    # Kidnap detection and global relocalization (relocalize.py, docs/PHASE10.md). Thresholds from the
+    # offline calibration on 16 recorded missions (scripts/reloc_calibrate.sh).
+    relocalization_enabled: true
+    kidnap_check_s: 0.5          # the scan is scored against the map this often (sim seconds)
+    kidnap_low_score: 0.35       # a score below this is a "low" check ...
+    kidnap_checks: 3             # ... and this many in a row is a kidnap
+    kidnap_good_score: 0.5       # the search uses the last map snapshot that scored at least this
+    kidnap_min_known: 30         # scan endpoints on known cells needed to score at all
+    kidnap_min_area_m2: 20.0     # no detection before the map has this much known area
+    reloc_hit_dist_m: 0.15       # scale of the scan-to-wall distance score
+    reloc_min_score: 0.85        # the best pose must score at least this ...
+    reloc_min_margin: 0.15       # ... and beat the best pose >= 1 m away by this
