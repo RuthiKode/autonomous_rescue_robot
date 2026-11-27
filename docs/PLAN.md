@@ -273,3 +273,5 @@ Lost mode (`docs/PHASE11.md`): kidnaps into unmapped space. Teleport 5/5 live (f
 block 2/2, 221 tests; three live attempts, each finding and fixing a failure, are kept.
 Every re-seed confirmed by motion (`docs/PHASE12.md`): teleport 5/5 live with all 6 re-seeds
 confirmed, block 2/2, normal mission done, 233 tests; two earlier attempts kept.
+Lost-mode timeout (`docs/PHASE13.md`): 360 s, then the fresh map becomes the mission map; forced live
+test 2/2, no regression, 241 tests.

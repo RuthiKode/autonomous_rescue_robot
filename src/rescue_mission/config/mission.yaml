@@ -51,6 +51,8 @@ mission_tree:
     lost_match_window_s: 60.0    # confident matches older than this are forgotten
     lost_grace_s: 120.0          # while lost, "no frontier" this soon after the reset is not DONE
     lost_wake_backup_m: 0.4      # after the reset: back up this far and spin once to start the new map
+    lost_timeout_s: 360.0        # lost this long: give up on the saved map, keep exploring the fresh one.
+                                 # Successful lost-mode recoveries took 27-263 s (scripts/lost_durations.sh)
     reloc_repeat_window_s: 90.0  # a kidnap this soon after a re-seed goes to lost mode (no single-match re-seed)
     # Every re-seed confirmed by motion (docs/PHASE12.md): a first confident match is only a candidate;
     # the robot turns to the most open direction, drives this far (backs up if blocked), and a second

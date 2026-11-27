@@ -1,0 +1,33 @@
+=== timeout20_teleport teleport collapsed seed 1 15:15:32
+[explore_eval] injected teleport: robot moved from (-4.3, -0.9) to (3.0, -5.9) (ok=True)
+[explore_eval] coverage 0.187 after 397 s; 90% at nan s; stopped: mission DONE: no frontier cluster above the minimum size is left; lost-mode timeout: the map from before the kidnap was abandoned
+[explore_eval] injection teleport: recovered=False (mission DONE, coverage 0.19, 15 goals and 1 recoveries after, pose error 11.65 m (peak 14.80 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase13/runs.csv
+kidnapped: scan-to-map score 0.10
+lost: no confident match; SLAM reset to a fresh map, searching the saved map every 2 s while exploring
+lost: no confirmed match in 20 s (timeout 20 s); giving up on the saved map, exploring on the fresh map from here
+mission state DONE: no frontier cluster above the minimum size is left; lost-mode timeout: the map from before the kidnap was abandoned
+=== timeout20_teleport teleport collapsed seed 2 15:24:49
+[explore_eval] injected teleport: robot moved from (-4.0, -0.7) to (5.9, -1.5) (ok=True)
+[explore_eval] coverage 0.264 after 366 s; 90% at nan s; stopped: mission DONE: no frontier cluster above the minimum size is left; lost-mode timeout: the map from before the kidnap was abandoned
+[explore_eval] injection teleport: recovered=False (mission DONE, coverage 0.26, 14 goals and 1 recoveries after, pose error 8.85 m (peak 12.04 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase13/runs.csv
+kidnapped: scan-to-map score 0.12
+lost: no confident match; SLAM reset to a fresh map, searching the saved map every 2 s while exploring
+lost: no confirmed match in 20 s (timeout 20 s); giving up on the saved map, exploring on the fresh map from here
+mission state DONE: no frontier cluster above the minimum size is left; lost-mode timeout: the map from before the kidnap was abandoned
+=== timeout360_teleport teleport collapsed seed 1 15:33:37
+[explore_eval] injected teleport: robot moved from (4.2, 1.9) to (5.4, -5.9) (ok=True)
+[explore_eval] coverage 0.988 after 321 s; 90% at 284.5 s; stopped: mission DONE: no frontier cluster above the minimum size is left
+[explore_eval] injection teleport: recovered=True (mission DONE, coverage 0.99, 7 goals and 3 recoveries after, pose error 0.03 m (peak 9.16 m))
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase13/runs.csv
+kidnapped: scan-to-map score 0.09
+lost: no confident match; SLAM reset to a fresh map, searching the saved map every 2 s while exploring
+lost: match (3.64, -1.36) score 0.98 confirmed by an earlier match: matches agree with odometry within 0.05 m, 1 deg
+relocalized from lost mode: saved map reloaded at (3.60, -1.07, 1.72)
+mission state DONE: no frontier cluster above the minimum size is left
+=== timeout360_none none collapsed seed 1 15:42:23
+[explore_eval] coverage 0.991 after 210 s; 90% at 108.4 s; stopped: mission DONE: no frontier cluster above the minimum size is left
+[explore_eval] status=ok; row appended to /home/ruthik/autonomous_rescue_robot/results/phase13/runs.csv
+mission state DONE: no frontier cluster above the minimum size is left
+TESTS_DONE

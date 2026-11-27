@@ -87,6 +87,8 @@ DEFAULT_PARAMS = {
     'lost_match_window_s': 60.0,     # confident matches older than this are forgotten
     'lost_grace_s': 120.0,           # while lost, "no frontier" in this time after the reset is not DONE
     'lost_wake_backup_m': 0.4,       # after the reset: back up this far and spin once to start the map
+    'lost_timeout_s': 0.0,           # lost this long without a confirmed match: give up on the saved
+                                     # map and keep exploring on the fresh one (0 = search forever)
     'reloc_repeat_window_s': 90.0,   # a kidnap this soon after a re-seed goes to lost mode (no single match)
     # every re-seed confirmed by motion: a first confident match is only a candidate; the robot drives
     # reloc_confirm_drive_m and a second confident match must agree with odometry (relocalize.py)
@@ -140,6 +142,7 @@ class Context:
         self.reloc_candidate = None      # (match pose, odom pose) waiting for a confirming match
         self.lost_matches = []           # [(sim time, match pose, odom pose)] confident, while lost
         self.lost_accept = None          # (match pose, odom pose) that passed the motion check
+        self.lost_abandoned = False      # lost mode timed out: the saved map was given up
         self.detector = rl.KidnapDetector(
             self.p['kidnap_low_score'], int(self.p['kidnap_checks']), int(self.p['kidnap_min_known']),
             self.p['kidnap_min_area_m2'], self.p['kidnap_good_score'])
@@ -307,6 +310,24 @@ class Context:
             self.request_recovery('kidnapped')
             self.cancel_active_goal()
 
+    def lost_timed_out(self, now):
+        """Lost longer than lost_timeout_s (0 = never), and no recovery running (a reload in progress
+        must finish)."""
+        t = self.p['lost_timeout_s']
+        return t > 0 and self.recovery is None and now - self.lost_since > t
+
+    def abandon_saved_map(self, now):
+        """Lost-mode timeout: stop searching the saved map. The fresh SLAM map becomes the mission map;
+        kidnap and jump checks resume against it. The final state reports that the old map was given up."""
+        lost_for = now - self.lost_since
+        self.lost, self.lost_snapshot, self.lost_matches, self.lost_accept = False, None, [], None
+        self.lost_abandoned, self.graph_saved, self._mo = True, False, None
+        self.detector.reset()
+        self.detector.snapshot = None
+        self.node.get_logger().warning(
+            f'lost: no confirmed match in {lost_for:.0f} s (timeout {self.p["lost_timeout_s"]:.0f} s); '
+            'giving up on the saved map, exploring on the fresh map from here')
+
     def poll(self, _tree=None):
         """Runs before every tick: watches map -> odom for a localization jump, and (when enabled)
         the scan-to-map score for a kidnap."""
@@ -316,7 +337,10 @@ class Context:
         if self.lost:
             # the SLAM map is a fresh one with an unknown offset to the saved map: kidnap and jump
             # checks against it mean nothing; only the search against the saved map does
-            self.check_lost(now)
+            if self.lost_timed_out(now):
+                self.abandon_saved_map(now)
+            else:
+                self.check_lost(now)
             self._mo = None
             return
         if self.p['relocalization_enabled']:
@@ -1065,6 +1089,10 @@ class Finish(py_trees.behaviour.Behaviour):
     def update(self):
         c = self.ctx
         state, why = c.finish or ('DONE', self.reason or 'exploration ended')
+        if c.lost:
+            why += '; still lost: the pose is on a fresh map, not on the map from before the kidnap'
+        elif c.lost_abandoned:
+            why += '; lost-mode timeout: the map from before the kidnap was abandoned'
         c.set_state(state, why)
         return Status.SUCCESS
 

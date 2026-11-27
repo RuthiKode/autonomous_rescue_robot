@@ -2,6 +2,7 @@
 
   ros2 launch rescue_mission mission.launch.py                # explore, recover
   ros2 launch rescue_mission mission.launch.py verify:=true   # also drive to pins for a close look
+  ros2 launch rescue_mission mission.launch.py mission_params:=extra.yaml   # override mission.yaml values
 
 Start it on top of the simulation, SLAM and Nav2 (it replaces explore_baseline.launch.py). With
 verify:=true the perception launch must also have verification:=true, so the localizer can turn the
@@ -28,6 +29,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='true'),
         DeclareLaunchArgument('verify', default_value='false'),
+        DeclareLaunchArgument('mission_params', default_value=mission_cfg,
+                              description='extra mission_tree parameter file, layered over mission.yaml'),
         DeclareLaunchArgument('selector_mode', default_value='score',
                               description='score: information gain per path cost; random: random '
                                           'reachable goals (the lower-bound baseline)'),
@@ -35,7 +38,8 @@ def generate_launch_description():
              name='frontier_selector', output='screen',
              parameters=[selector_cfg, selector_mode, use_sim_time]),
         Node(package='rescue_mission', executable='mission_tree', name='mission_tree',
-             output='screen', parameters=[mission_cfg, verify, use_sim_time]),
+             output='screen', parameters=[mission_cfg, LaunchConfiguration('mission_params'), verify,
+                         use_sim_time]),
         Node(package='rescue_exploration', executable='map_stats', name='map_stats',
              output='screen', parameters=[use_sim_time]),
     ])

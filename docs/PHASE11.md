@@ -186,6 +186,8 @@ bash scripts/phase11_summary.sh       # per-run landing share, time lost, verdic
 - **The map explored while lost is thrown away** when the saved map is reloaded, and is explored
   again (lost 31-175 s here).
 - **No timeout on lost mode.** A robot that never sees mapped space again explores the fresh map
-  until the mission ends, with its pose in a different frame from the saved map.
+  until the mission ends, with its pose in a different frame from the saved map. *Phase 13 added a
+  360 s timeout, after which the robot gives up on the saved map and the final state says so
+  (`docs/PHASE13.md`).*
 - **Gazebo segfaults at startup** sometimes (2 of 20 phase-11 mission launches). These runs are reported as
   `startup_timeout`, and the run is repeated in the next batch.

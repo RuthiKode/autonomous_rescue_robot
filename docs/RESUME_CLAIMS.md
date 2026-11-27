@@ -18,7 +18,7 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
   Recovered 5 of 5 live kidnapped-robot tests with all 6 re-seeds motion-confirmed (one batch, one
   simulated world; final error ≤ 0.11 m), up from 0 of 5.
 - Built a seeded evaluation harness (coverage, map IoU, ATE, pin precision/recall, failure injection) and
-  generated every results table from CSV; 233 automated tests.
+  generated every results table from CSV; 241 automated tests.
 
 ## Sources
 | claim | number | source |
@@ -36,7 +36,7 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
 | progression | week 8: 0/5; phase 10: 1/5; phase 11: 5/5; phase 12: 5/5 with every re-seed confirmed | `docs/PHASE7.md`, `docs/PHASE10.md`, `docs/PHASE11.md`, `docs/PHASE12.md` |
 | motion check offline (live setting, min 40 known endpoints) | 8 of 8 accepted matches correct; 0 of 7 wrong single answers accepted (min 20: 9 of 9, 0 of 27) | `docs/PHASE11.md`, `results/lost_offline/searches.csv`, `searches_min20.csv` |
 | blocked corridor | 5 of 5 recovered | `docs/PHASE7.md`, `results/failure_tests/runs/*/injection.json` |
-| tests | 233 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-27 |
+| tests | 241 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-27 |
 
 ## Do not claim
 - That the own selector beats explore_lite (difference -35 s to 90 %, CI -113 to +42 s: not separated).

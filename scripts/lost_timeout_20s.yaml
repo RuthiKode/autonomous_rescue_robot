@@ -1,0 +1,4 @@
+# Test-only override (scripts/phase13_tests.sh): a 20 s lost-mode timeout, so the give-up path runs.
+mission_tree:
+  ros__parameters:
+    lost_timeout_s: 20.0

@@ -70,7 +70,14 @@ From the evaluation sweep, 60 runs, 3-5 seeds per cell (`docs/PHASE8.md`, tables
     was rerun). All 6 re-seeds were motion-confirmed (`scripts/reseed_proof.sh`). Block 2 of 2, normal
     mission done at 0.999 coverage.
   - **Cost:** direct-path recovery now takes 20-24 s instead of 3 s.
-- 233 unit/integration tests pass (`colcon test`, simulation tests skipped).
+- Lost-mode timeout (`docs/PHASE13.md`):
+  - **What it does:** after 360 s lost, the robot gives up on the saved map and keeps exploring on the
+    fresh one. The final state says so.
+  - **Why 360 s:** the 13 recorded successful lost-mode recoveries took 27-263 s.
+  - **Live:** forced to 20 s, it gave up and kept exploring in 2 of 2 runs, ending DONE with the
+    reason. At 360 s, a teleport still recovered (after 224 s lost), and a normal mission was
+    unaffected.
+- 241 unit/integration tests pass (`colcon test`, simulation tests skipped).
 
 ## Limitations
 - Kidnap recovery is tested on one batch of 5 live teleports in one world (`docs/PHASE12.md`).

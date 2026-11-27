@@ -149,7 +149,8 @@ def main(argv=None):
     parser.add_argument('--min-confidence', default='',
                         help='localizer min_confidence override (default: perception.yaml)')
     parser.add_argument('--explore-params', default=None,
-                        help='explore_lite parameter file to use instead of the project default')
+                        help='explore_lite parameter file to use instead of the project default; with'
+                             ' --explorer own/random: extra mission_tree parameters over mission.yaml')
     parser.add_argument('--worlds-dir', default=None,
                         help='generated worlds to use instead of the installed ones')
     parser.add_argument('--collect-frames', default=None, metavar='DIR',
@@ -261,6 +262,8 @@ def main(argv=None):
                     explore_cmd = ['ros2', 'launch', 'rescue_mission', 'mission.launch.py',
                                    f'verify:={"true" if args.verify else "false"}',
                                    f'selector_mode:={"random" if args.explorer == "random" else "score"}']
+                    if args.explore_params:
+                        explore_cmd.append(f'mission_params:={os.path.abspath(args.explore_params)}')
                 elif args.explore_params:
                     explore_cmd.append(f'params_file:={os.path.abspath(args.explore_params)}')
                 procs.append(Process(explore_cmd, log_path))

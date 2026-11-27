@@ -133,5 +133,6 @@ To restore the v1.1.0 behaviour, set these in `mission.yaml`:
   next attempt starts over.
 - The "pre-kidnap" graph saved at a localization jump can already contain a second or so of scans from
   the wrong pose.
-- Lost mode still has no timeout, and the map explored while lost is still discarded.
+- Lost mode had no timeout here (*added in phase 13, `docs/PHASE13.md`*), and the map explored while
+  lost is still discarded.
 - One world, one batch of 5 teleports.
