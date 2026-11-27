@@ -93,3 +93,22 @@ def test_detector_ignores_small_maps_and_scans_into_unknown():
     det = KidnapDetector(min_known_area_m2=20.0)
     kid, s, n = det.update(f, np.array([[1.0, 0.0], [0.0, 1.0]]), (5.0, 4.0, 0.0))
     assert kid is False and n == 0
+
+
+def test_motion_check_accepts_matches_that_follow_odometry():
+    from rescue_mission.relocalize import motion_consistent
+    # robot drives 1.5 m forward and turns 0.3 rad; map and odom frames differ by an arbitrary offset
+    ok, _ = motion_consistent((2.0, 3.0, 0.5), (10.0, -4.0, 2.0),
+                              (2.0 + 1.5 * math.cos(0.5), 3.0 + 1.5 * math.sin(0.5), 0.8),
+                              (10.0 + 1.5 * math.cos(2.0), -4.0 + 1.5 * math.sin(2.0), 2.3))
+    assert ok
+
+
+def test_motion_check_rejects_an_alias_and_no_motion():
+    from rescue_mission.relocalize import motion_consistent
+    # the same wrong place proposed twice while the robot drove 1.5 m: matches do not move, odometry does
+    ok, why = motion_consistent((4.0, -1.8, 1.9), (0.0, 0.0, 0.0), (4.0, -1.8, 1.9), (1.5, 0.0, 0.0))
+    assert not ok and 'disagree' in why
+    # two matches from (almost) the same spot prove nothing
+    ok, why = motion_consistent((4.0, -1.8, 1.9), (0.0, 0.0, 0.0), (4.0, -1.8, 1.9), (0.2, 0.0, 0.1))
+    assert not ok and 'not enough motion' in why

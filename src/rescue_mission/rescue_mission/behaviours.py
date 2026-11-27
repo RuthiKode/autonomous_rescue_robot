@@ -29,7 +29,7 @@ from rclpy.time import Time
 from rescue_msgs.msg import MissionState, SurvivorArray
 from rescue_msgs.srv import SelectFrontier as SelectFrontierSrv
 from sensor_msgs.msg import LaserScan
-from slam_toolbox.srv import DeserializePoseGraph, Pause, SerializePoseGraph
+from slam_toolbox.srv import DeserializePoseGraph, Pause, Reset, SerializePoseGraph
 import tf2_ros
 
 from rescue_mission import logic as lg
@@ -74,7 +74,23 @@ DEFAULT_PARAMS = {
     'reloc_hit_dist_m': 0.15,        # scale of the scan-to-wall distance score
     'reloc_min_score': 0.85,         # the best pose must score at least this ...
     'reloc_min_margin': 0.15,        # ... and beat the best pose elsewhere (>= 1 m away) by this
+    # lost mode: the search failed (e.g. kidnapped into unmapped space). SLAM restarts on a fresh map,
+    # the robot keeps exploring, and the scan is searched against the saved pre-kidnap map until two
+    # confident matches agree with the odometry between them; then the saved map is reloaded there.
+    'lost_mode_enabled': False,
+    'lost_check_s': 2.0,             # search against the saved map this often (sim seconds)
+    'lost_min_known': 40,            # endpoints on known cells of the saved map needed for a match
+    'lost_min_motion_m': 1.0,        # two matches must be this far apart by odometry ...
+    'lost_min_turn_rad': 0.785,      # ... or turned this much ...
+    'lost_tol_m': 0.3,               # ... and their relative pose must equal the odometry change
+    'lost_tol_rad': 0.175,           # within these
+    'lost_match_window_s': 60.0,     # confident matches older than this are forgotten
+    'lost_grace_s': 120.0,           # while lost, "no frontier" in this time after the reset is not DONE
+    'lost_wake_backup_m': 0.4,       # after the reset: back up this far and spin once to start the map
+    'reloc_repeat_window_s': 90.0,   # a kidnap this soon after a re-seed goes to lost mode (no single match)
 }
+
+PREKIDNAP_GRAPH = '/tmp/rescue_prekidnap_posegraph'
 
 
 class Context:
@@ -109,6 +125,11 @@ class Context:
         self.scan_msg, self.sensor_pose = None, None
         self._field, self._field_stamp, self._kid_t = None, None, -1e9
         self.slam_paused, self.relocalized = False, False
+        self.graph_saved = False         # the pre-kidnap pose graph is in PREKIDNAP_GRAPH
+        self.lost, self.lost_snapshot, self._lost_t, self.lost_since = False, None, -1e9, -1e9
+        self.last_reseed_t = -1e9        # sim time of the last SLAM re-seed (direct or from lost mode)
+        self.lost_matches = []           # [(sim time, match pose, odom pose)] confident, while lost
+        self.lost_accept = None          # (match pose, odom pose) that passed the motion check
         self.detector = rl.KidnapDetector(
             self.p['kidnap_low_score'], int(self.p['kidnap_checks']), int(self.p['kidnap_min_known']),
             self.p['kidnap_min_area_m2'], self.p['kidnap_good_score'])
@@ -118,6 +139,56 @@ class Context:
             self.serialize_client = node.create_client(SerializePoseGraph, '/slam_toolbox/serialize_map')
             self.deserialize_client = node.create_client(DeserializePoseGraph,
                                                          '/slam_toolbox/deserialize_map')
+            self.reset_client = node.create_client(Reset, '/slam_toolbox/reset')
+
+    def save_graph(self):
+        """Serialize slam_toolbox's pose graph (once per kidnap episode, while SLAM is paused)."""
+        if not self.graph_saved and self.serialize_client.service_is_ready():
+            req = SerializePoseGraph.Request()
+            req.filename = PREKIDNAP_GRAPH
+            self.serialize_client.call_async(req)
+            self.graph_saved = True
+            self.node.get_logger().info('pre-kidnap pose graph saved')
+
+    def odom_pose(self):
+        try:
+            t = self.tf_buffer.lookup_transform('odom', 'base_link', Time(), Duration(seconds=0.1))
+        except tf2_ros.TransformException:
+            return None
+        q = t.transform.rotation
+        return (t.transform.translation.x, t.transform.translation.y,
+                math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z)))
+
+    def check_lost(self, now):
+        """While lost: search the saved map; request 'lost_found' once two confident matches agree
+        with the odometry between them."""
+        if now - self._lost_t < self.p['lost_check_s'] or self.recovery is not None:
+            return
+        self._lost_t = now
+        pts, odom = self.scan_points(), self.odom_pose()
+        if pts is None or odom is None or self.lost_snapshot is None:
+            return
+        res = rl.global_search(self.lost_snapshot, pts, hit_dist_m=self.p['reloc_hit_dist_m'],
+                               min_known=int(self.p['lost_min_known']))
+        if res is None or res['score'] < self.p['reloc_min_score'] or res['margin'] < self.p['reloc_min_margin']:
+            return
+        self.lost_matches = [m for m in self.lost_matches if now - m[0] <= self.p['lost_match_window_s']]
+        for _t, pose, od in self.lost_matches:
+            ok, why = rl.motion_consistent(pose, od, res['pose'], odom, self.p['lost_min_motion_m'],
+                                           self.p['lost_min_turn_rad'], self.p['lost_tol_m'],
+                                           self.p['lost_tol_rad'])
+            if ok:
+                self.node.get_logger().info(
+                    f'lost: match ({res["pose"][0]:.2f}, {res["pose"][1]:.2f}) score {res["score"]:.2f} '
+                    f'confirmed by an earlier match: {why}')
+                self.lost_accept = (res['pose'], odom)
+                self.request_recovery('lost_found')
+                self.cancel_active_goal()
+                return
+        self.node.get_logger().info(
+            f'lost: candidate match ({res["pose"][0]:.2f}, {res["pose"][1]:.2f}) score {res["score"]:.2f}, '
+            f'next best elsewhere {res["second"]:.2f}; waiting for a second match after the robot moves')
+        self.lost_matches.append((now, res['pose'], odom))
 
     def _on_scan(self, msg):
         self.scan_msg = msg
@@ -211,10 +282,14 @@ class Context:
             return
         kidnapped, s, n = self.detector.update(f, pts, pose, self.p['reloc_hit_dist_m'])
         if self.detector.low_count > 0:
-            # stop slam_toolbox from drawing the scans at a wrong pose while we find out
+            # stop slam_toolbox from drawing the scans at a wrong pose while we find out, and keep
+            # the map as it was (lost mode reloads it)
             self.set_slam_paused(True)
+            if self.p['lost_mode_enabled']:
+                self.save_graph()
         elif self.slam_paused:
             self.set_slam_paused(False)
+            self.graph_saved = False
         if kidnapped:
             self.node.get_logger().warning(
                 f'kidnapped: scan-to-map score {s:.2f} ({n} endpoints) for '
@@ -228,6 +303,12 @@ class Context:
         if not self.p['recovery_enabled']:
             return
         now = self.now_s()
+        if self.lost:
+            # the SLAM map is a fresh one with an unknown offset to the saved map: kidnap and jump
+            # checks against it mean nothing; only the search against the saved map does
+            self.check_lost(now)
+            self._mo = None
+            return
         if self.p['relocalization_enabled']:
             self.check_kidnap(now)
         if now - self._mo_t < self.p['jump_check_s']:
@@ -293,6 +374,13 @@ class SelectFrontier(py_trees.behaviour.Behaviour):
             if c.logic.want_clear:
                 c.logic.want_clear = False
                 c.request_recovery('no_path')
+        elif decision == lg.DONE and c.lost and c.now_s() - c.lost_since < c.p['lost_grace_s']:
+            # a fresh SLAM map after a lost-mode reset has no frontiers until the robot has moved:
+            # move to grow it instead of ending the mission
+            c.logic.empty_count = 0
+            c.logic.consecutive_recoveries = 0
+            self.next_try = c.now_s() + c.p['reselect_delay_s']
+            c.request_recovery('lost_wake')
         elif decision == lg.DONE:
             c.finish = ('DONE', c.logic.done_reason)
             return Status.FAILURE
@@ -570,21 +658,92 @@ class NoStep(_Step):
         return True
 
 
-class ResumeSlam(NoStep):
-    """Let slam_toolbox take new measurements again (it was paused by the kidnap check)."""
+class ResumeSlam(_Step):
+    """Let slam_toolbox take new measurements again (it was paused by the kidnap check).
+
+    After a kidnap that the search could not resolve, with lost mode enabled: enter lost mode instead.
+    SLAM is reset to a fresh map (drawing the new area on top of the old map at a wrong offset is what
+    made the mission fail before), and the old map is kept as the saved pose graph plus a snapshot."""
 
     def __init__(self, ctx):
-        super().__init__(ctx)
-        ctx.set_slam_paused(False)
-        ctx.detector.reset()
+        super().__init__(ctx, 10.0)
+        c = ctx
+        log = c.node.get_logger()
+        self.reset_future = None
+        if (c.recovery == 'kidnapped' and not c.relocalized and c.p['lost_mode_enabled']
+                and c.graph_saved and c.reset_client.service_is_ready()):
+            c.lost_snapshot = c.detector.snapshot or c.field()
+            c.lost, c.lost_matches, c.lost_accept, c._lost_t = True, [], None, -1e9
+            c.lost_since = c.now_s()
+            self.reset_future = c.reset_client.call_async(Reset.Request(pause_new_measurements=False))
+            c.detector.reset()
+            c.detector.snapshot = None
+            c.logic.consecutive_recoveries = 0
+            log.warning('lost: no confident match; SLAM reset to a fresh map, searching the saved map '
+                        f'every {c.p["lost_check_s"]:.0f} s while exploring')
+            return
+        c.set_slam_paused(False)
+        c.graph_saved = False
+        c.detector.reset()
+
+    def done(self):
+        # The reset's own pause flag does not undo the earlier pause toggle (tested live,
+        # scripts/reset_growth_smoke.sh): once the reset is done, toggle the pause off as well.
+        if self.reset_future is None:
+            return True
+        if not self.reset_future.done() and not self.timed_out():
+            return False
+        self.ctx.set_slam_paused(False)
+        self.reset_future = None
+        return True
 
 
 class PauseSlam(NoStep):
-    """Freeze the SLAM map while the robot is being relocalized."""
+    """Freeze the SLAM map while the robot is being relocalized (and save it for lost mode)."""
 
     def __init__(self, ctx):
         super().__init__(ctx)
         ctx.set_slam_paused(True)
+        if ctx.p['lost_mode_enabled']:
+            ctx.save_graph()
+
+
+class LostFound(_Step):
+    """Lost mode found the robot on the saved map: reload the saved pose graph at the robot's pose
+    now (the confirmed match moved on by the odometry since), and leave lost mode."""
+
+    def __init__(self, ctx):
+        super().__init__(ctx, 30.0)
+        c = ctx
+        match, odom_then = c.lost_accept
+        odom_now = c.odom_pose() or odom_then
+        d = rl.relative(odom_then, odom_now)
+        cs, sn = math.cos(match[2]), math.sin(match[2])
+        self.pose = (match[0] + cs * d[0] - sn * d[1], match[1] + sn * d[0] + cs * d[1],
+                     (match[2] + d[2] + math.pi) % (2 * math.pi) - math.pi)
+        req = DeserializePoseGraph.Request()
+        req.filename = PREKIDNAP_GRAPH
+        req.match_type = DeserializePoseGraph.Request.START_AT_GIVEN_POSE
+        req.initial_pose = Pose2D(x=self.pose[0], y=self.pose[1], theta=self.pose[2])
+        self.future = c.deserialize_client.call_async(req) if c.deserialize_client.service_is_ready() else None
+
+    def done(self):
+        c = self.ctx
+        if self.future is not None and not self.future.done() and not self.timed_out():
+            return False
+        if self.future is None or not self.future.done():
+            c.node.get_logger().warning('lost: reloading the saved map failed; still lost')
+            c.lost_matches, c.lost_accept = [], None
+            return True
+        c.lost, c.lost_snapshot, c.lost_matches, c.lost_accept = False, None, [], None
+        c.graph_saved, c.relocalized, c._mo = False, True, None
+        c.last_reseed_t = c.now_s()
+        c.detector.reset()
+        c.detector.snapshot = None
+        c.logic.consecutive_recoveries = 0
+        c.node.get_logger().info(f'relocalized from lost mode: saved map reloaded at '
+                                 f'({self.pose[0]:.2f}, {self.pose[1]:.2f}, {self.pose[2]:.2f})')
+        return True
 
 
 class Relocalize(_Step):
@@ -605,6 +764,14 @@ class Relocalize(_Step):
         if self.stage == 'search':
             if c.now_s() - self.t0 < 1.0:          # a fresh scan from the stopped robot
                 return False
+            if (c.recovery == 'kidnapped' and c.p['lost_mode_enabled']
+                    and c.now_s() - c.last_reseed_t < c.p['reloc_repeat_window_s']):
+                # kidnapped again soon after a re-seed: that re-seed may have been wrong (an alias),
+                # so a single match is not trusted now; lost mode needs two that agree with odometry
+                log.warning(f'relocalization attempt {self.attempt}: kidnapped again '
+                            f'{c.now_s() - c.last_reseed_t:.0f} s after a re-seed, not trusting a single match')
+                self.stage = 'done'
+                return True
             f, pts = c.detector.snapshot or c.field(), c.scan_points()
             res = rl.global_search(f, pts, hit_dist_m=c.p['reloc_hit_dist_m']) if f and pts is not None \
                 else None
@@ -627,15 +794,20 @@ class Relocalize(_Step):
                 self.stage = 'done'
                 return True
             self.pose = res['pose']
+            if c.graph_saved:
+                # reload the graph saved at the first low score: the current one can hold nodes
+                # SLAM added at the wrong pose right after the kidnap, which it would later loop-close to
+                self.graph_file, self.future, self.stage = PREKIDNAP_GRAPH, None, 'serialize'
+                return False
             req = SerializePoseGraph.Request()
-            req.filename = '/tmp/rescue_reloc_posegraph'
+            req.filename = self.graph_file = '/tmp/rescue_reloc_posegraph'
             self.future, self.stage = c.serialize_client.call_async(req), 'serialize'
             return False
-        if not self.future.done():
+        if self.future is not None and not self.future.done():
             return False
         if self.stage == 'serialize':
             req = DeserializePoseGraph.Request()
-            req.filename = '/tmp/rescue_reloc_posegraph'
+            req.filename = self.graph_file
             req.match_type = DeserializePoseGraph.Request.START_AT_GIVEN_POSE
             req.initial_pose = Pose2D(x=self.pose[0], y=self.pose[1], theta=self.pose[2])
             self.future, self.stage = c.deserialize_client.call_async(req), 'deserialize'
@@ -644,6 +816,8 @@ class Relocalize(_Step):
         # and a successful relocalization counts as progress for the recovery counter.
         c.relocalized = True
         c._mo = None
+        c.graph_saved = False
+        c.last_reseed_t = c.now_s()
         c.logic.consecutive_recoveries = 0
         log.info(f'relocalized: slam_toolbox re-seeded at ({self.pose[0]:.2f}, {self.pose[1]:.2f}, '
                  f'{self.pose[2]:.2f})')
@@ -657,6 +831,15 @@ def plan_recovery(ctx, reason):
     clear = lambda: ClearCostmaps(ctx)  # noqa: E731
     if reason == 'no_path':
         return [clear]
+    if reason == 'lost_found':
+        return [lambda: StopRobot(ctx), lambda: LostFound(ctx), clear]
+    wake = [lambda: (ActionStep(ctx, ctx.backup_client, _backup_goal(p['lost_wake_backup_m'],  # noqa: E731
+                                                                     p['backup_speed_mps']), 20.0)
+                     if ctx.lost else NoStep(ctx)),
+            lambda: (ActionStep(ctx, ctx.spin_client, _spin_goal(p['rescan_rad']), 40.0)
+                     if ctx.lost else NoStep(ctx))]
+    if reason == 'lost_wake':
+        return [clear] + wake + [clear]
     if reason == 'kidnapped' or (reason == 'localization_jump' and p['relocalization_enabled']):
         # Search where the scan fits the last good map. A jump of map -> odom is checked the same
         # way: slam_toolbox's own scan matcher can snap to a wrong place right after a kidnap.
@@ -665,8 +848,9 @@ def plan_recovery(ctx, reason):
         ctx.relocalized = False
         spin_if_needed = lambda: (NoStep(ctx) if ctx.relocalized else  # noqa: E731
                                   ActionStep(ctx, ctx.spin_client, _spin_goal(p['rescan_rad']), 40.0))
+        # (after ResumeSlam: if lost mode started, move so the fresh SLAM map gets its first nodes)
         return [lambda: StopRobot(ctx), lambda: PauseSlam(ctx), lambda: Relocalize(ctx, 1), spin_if_needed,
-                lambda: Relocalize(ctx, 2), lambda: ResumeSlam(ctx), clear]
+                lambda: Relocalize(ctx, 2), lambda: ResumeSlam(ctx), clear] + wake + [clear]
     if reason == 'localization_jump':
         spin = lambda: ActionStep(ctx, ctx.spin_client, _spin_goal(p['rescan_rad']), 40.0)  # noqa: E731
         return [lambda: StopRobot(ctx), spin, clear]
@@ -707,7 +891,10 @@ class DoRecovery(py_trees.behaviour.Behaviour):
                                    'localization_jump': 'localization jump: stopping and '
                                                         're-scanning',
                                    'kidnapped': 'kidnapped: scan does not fit the map, searching the '
-                                                'map for the robot'}.get(self.reason, self.reason))
+                                                'map for the robot',
+                                   'lost_found': 'lost: found on the saved map, reloading it',
+                                   'lost_wake': 'lost: moving to grow the fresh map'
+                                   }.get(self.reason, self.reason))
 
     def update(self):
         c = self.ctx

@@ -122,8 +122,9 @@ def _compose(a, b):
     return a[0] + c * b[0] - s * b[1], a[1] + s * b[0] + c * b[1], a[2] + b[2]
 
 
-def replay(bag_dir, every_s=0.5):
-    """Yield (t, field, scan points in base frame, SLAM pose, true pose in world frame) about every_s."""
+def replay(bag_dir, every_s=0.5, with_odom=False):
+    """Yield (t, field, scan points in base frame, SLAM pose, true pose in world frame) about every_s,
+    plus the odom -> base_link pose when with_odom."""
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'rescue_mission'))
     from rescue_mission.relocalize import Field, scan_points
     tfs, static, field, truth, last = {}, {}, None, None, -1e9
@@ -146,7 +147,11 @@ def replay(bag_dir, every_s=0.5):
             last = t
             pts = scan_points(msg.ranges, msg.angle_min, msg.angle_increment, msg.range_min, msg.range_max,
                               sensor)
-            yield t, field, pts, _compose(tfs[('map', 'odom')], tfs[('odom', 'base_link')]), truth
+            slam = _compose(tfs[('map', 'odom')], tfs[('odom', 'base_link')])
+            if with_odom:
+                yield t, field, pts, slam, truth, tfs[('odom', 'base_link')]
+            else:
+                yield t, field, pts, slam, truth
 
 
 def _sensor_pose(static, frame):
@@ -215,6 +220,70 @@ def calibrate(out_dir, *bag_dirs):
         print(f'{w}: kidnap flags during normal driving: {flags}')
 
 
+def lost(out_csv, *bag_dirs):
+    """Lost-mode go/no-go: after each teleport, search every 2 s against the map from just before it.
+
+    Per search: was a correct match possible at all (true cell known free in that map), was the answer
+    confident (score >= 0.85, margin >= 0.15), was it correct (within 0.5 m and 15 deg of the truth).
+    Then, per bag, the motion check: does any pair of confident answers >= 1 m / 45 deg of odometry
+    apart agree with odometry, and is that pair correct?
+    """
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'rescue_mission'))
+    from rescue_mission.relocalize import global_search, motion_consistent
+    rows = []
+    for bag in bag_dirs:
+        rid = os.path.basename(bag.rstrip('/'))
+        spawn = spawn_of(rid.split('_')[0])
+        t_jump, _, maps = find_teleport(bag)
+        snap_msg = [m for m in maps if m[0] < t_jump][-1][1]
+        from rescue_mission.relocalize import Field
+        snap = Field.from_msg(snap_msg)
+        last, conf = -1e9, []
+        for t, _field, pts, _slam, truth, odom in replay(bag, 0.5, with_odom=True):
+            if t < t_jump + 3.0 or t - last < 2.0:
+                continue
+            last = t
+            tm = world_to_map(truth, spawn)
+            r, c, inside = snap.cells(np.array([[tm[0], tm[1]]]))
+            possible = bool(inside[0] and snap.free[r[0], c[0]])
+            res = global_search(snap, pts)
+            if res is None:
+                rows.append((rid, round(t - t_jump, 1), int(possible), '', '', '', 0, '', ''))
+                continue
+            err = math.hypot(res['pose'][0] - tm[0], res['pose'][1] - tm[1])
+            yerr = math.degrees(abs((res['pose'][2] - tm[2] + math.pi) % (2 * math.pi) - math.pi))
+            confident = res['score'] >= 0.85 and res['margin'] >= 0.15
+            correct = err <= 0.5 and yerr <= 15
+            rows.append((rid, round(t - t_jump, 1), int(possible), round(res['score'], 3), round(res['margin'], 3),
+                         res['n_known'], int(confident), round(err, 2), int(correct)))
+            if confident:
+                conf.append((t, res['pose'], odom, correct, res['n_known']))
+        # motion check over confident answers, in time order: first accepted pair
+        accepted = None
+        for i in range(len(conf)):
+            for j in range(i):
+                ok, why = motion_consistent(conf[j][1], conf[j][2], conf[i][1], conf[i][2])
+                if ok:
+                    accepted = (conf[i][0] - t_jump, conf[j][3] and conf[i][3], why)
+                    break
+            if accepted:
+                break
+        mine = [r for r in rows if r[0] == rid]
+        n_pos = sum(r[2] for r in mine)
+        n_conf_imp = sum(1 for r in mine if not r[2] and r[6])
+        n_conf_pos = sum(1 for r in mine if r[2] and r[6])
+        n_conf_pos_ok = sum(1 for r in mine if r[2] and r[6] and r[8] == 1)
+        first_ok = next((r[1] for r in mine if r[6] and r[8] == 1), None)
+        print(f'{rid}: {len(mine)} searches; possible {n_pos}; confident when possible {n_conf_pos} '
+              f'(correct {n_conf_pos_ok}, first correct at +{first_ok} s); confident when impossible '
+              f'{n_conf_imp}; motion-checked accept: '
+              f'{"none" if accepted is None else f"+{accepted[0]:.0f} s, correct={accepted[1]} ({accepted[2]})"}',
+              flush=True)
+    with open(out_csv, 'w') as f:
+        f.write('run_id,t_after_teleport_s,possible,score,margin,n_known,confident,pos_error_m,correct\n')
+        f.writelines(','.join(map(str, r)) + '\n' for r in rows)
+
+
 if __name__ == '__main__':
     cmd = sys.argv[1]
-    {'landing': landing, 'calibrate': calibrate}[cmd](*sys.argv[2:])
+    {'landing': landing, 'calibrate': calibrate, 'lost': lost}[cmd](*sys.argv[2:])

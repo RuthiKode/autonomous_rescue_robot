@@ -2,7 +2,7 @@
 # Kill every sweep/simulation/ROS process, including hung map savers, clear leaked shared memory,
 # and show what is left.   scripts/hard_reset.sh            (also kills a running sweep)
 #                          scripts/hard_reset.sh --keep-sweep   (what sweep.sh calls between runs)
-pats=("map_saver_cli" "explore_eval" "ros2 bag" "install/rescue_")
+pats=("map_saver_cli" "explore_eval" "ros2 bag" "install/rescue_" "gz sim")
 [ "$1" != "--keep-sweep" ] && pats=("sweep.sh" "wait_for.sh" "${pats[@]}")
 for pat in "${pats[@]}"; do
   pkill -KILL -f "$pat" 2>/dev/null

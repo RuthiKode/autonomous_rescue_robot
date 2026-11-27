@@ -36,3 +36,17 @@ mission_tree:
     reloc_hit_dist_m: 0.15       # scale of the scan-to-wall distance score
     reloc_min_score: 0.85        # the best pose must score at least this ...
     reloc_min_margin: 0.15       # ... and beat the best pose >= 1 m away by this
+    # Lost mode (docs/PHASE11.md): after a kidnap the search could not resolve, reset SLAM to a fresh
+    # map, keep exploring, and search the saved pre-kidnap map until two confident matches agree with
+    # the odometry between them. Limits set before the offline check, not tuned on it.
+    lost_mode_enabled: true
+    lost_check_s: 2.0            # search against the saved map this often (sim seconds)
+    lost_min_known: 40           # endpoints on known cells of the saved map needed for a match
+    lost_min_motion_m: 1.0       # two matches must be this far apart by odometry ...
+    lost_min_turn_rad: 0.785     # ... or turned this much ...
+    lost_tol_m: 0.3              # ... and their relative pose must equal the odometry change
+    lost_tol_rad: 0.175          # within these
+    lost_match_window_s: 60.0    # confident matches older than this are forgotten
+    lost_grace_s: 120.0          # while lost, "no frontier" this soon after the reset is not DONE
+    lost_wake_backup_m: 0.4      # after the reset: back up this far and spin once to start the new map
+    reloc_repeat_window_s: 90.0  # a kidnap this soon after a re-seed goes to lost mode (no single-match re-seed)

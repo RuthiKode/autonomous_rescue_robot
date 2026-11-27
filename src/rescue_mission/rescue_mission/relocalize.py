@@ -153,8 +153,33 @@ def global_search(field, pts_base, coarse_step_m=0.25, n_yaw=24, fine_step_m=0.0
     second = max([s for s, p in refined[1:] if math.hypot(p[0] - best[0], p[1] - best[1]) >= distinct_m],
                  default=0.0)
     yaw = (best[2] + math.pi) % (2 * math.pi) - math.pi
+    _, n_known = score(field, pts_base, best, hit_dist_m)
     return {'pose': (float(best[0]), float(best[1]), float(yaw)), 'score': best_score,
-            'second': float(second), 'margin': best_score - float(second), 'candidates': len(poses)}
+            'second': float(second), 'margin': best_score - float(second), 'candidates': len(poses),
+            'n_known': n_known}
+
+
+def relative(a, b):
+    """Pose b expressed in the frame of pose a: (dx, dy, dyaw)."""
+    c, s = math.cos(a[2]), math.sin(a[2])
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    return c * dx + s * dy, -s * dx + c * dy, (b[2] - a[2] + math.pi) % (2 * math.pi) - math.pi
+
+
+def motion_consistent(match_a, odom_a, match_b, odom_b, min_motion_m=1.0, min_turn_rad=math.radians(45),
+                      tol_m=0.3, tol_rad=math.radians(10)):
+    """Two map matches taken at odometry poses odom_a, odom_b agree with each other: the robot moved
+    enough between them (an alias seen twice from the same spot proves nothing), and the change between
+    the two matches equals the change in odometry within tol. Returns (ok, why)."""
+    od = relative(odom_a, odom_b)
+    if math.hypot(od[0], od[1]) < min_motion_m and abs(od[2]) < min_turn_rad:
+        return False, 'not enough motion between the two matches'
+    md = relative(match_a, match_b)
+    err = math.hypot(md[0] - od[0], md[1] - od[1])
+    yerr = abs((md[2] - od[2] + math.pi) % (2 * math.pi) - math.pi)
+    if err > tol_m or yerr > tol_rad:
+        return False, f'matches disagree with odometry by {err:.2f} m, {math.degrees(yerr):.0f} deg'
+    return True, f'matches agree with odometry within {err:.2f} m, {math.degrees(yerr):.0f} deg'
 
 
 class KidnapDetector:
