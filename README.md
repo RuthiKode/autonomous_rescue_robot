@@ -28,6 +28,9 @@ sensors (2D lidar, RGB-D camera, IMU, wheel odometry)
   Failure injection (`--inject block|teleport`) is built in.
 
 ## Results (measured; details in `docs/`)
+The sweep and the week-8 failure tests ran before kidnap relocalization was added. It is now on by default;
+`relocalization_enabled: false` in `src/rescue_mission/config/mission.yaml` restores the configuration they measured.
+
 From the evaluation sweep, 60 runs, 3-5 seeds per cell (`docs/PHASE8.md`, tables in `docs/results/`):
 - Fine-tuning YOLOv8n on synthetic frames raised survivor recall by **+0.61** over COCO weights
   (paired, 95 % CI +0.39 to +0.83); the pretrained model pinned survivors in 1 of 13 runs.
@@ -41,8 +44,9 @@ From the evaluation sweep, 60 runs, 3-5 seeds per cell (`docs/PHASE8.md`, tables
 - Failure tests (`docs/PHASE7.md`): blocked corridor recovered in 5 of 5 runs; kidnapped robot (teleport)
   recovered in 0 of 5.
 - Kidnap detection and global relocalization added afterwards (`docs/PHASE10.md`):
-  - **Detection:** the scan is scored against the map. Offline on 16 recorded missions it caught
-    5 of 5 teleports, with 0 false alarms in 8,072 normal scans.
+  - **Detection:** the scan is scored against the map. Live, it detected 5 of 5 kidnaps, with no false
+    alarm in 5 kidnap-free missions. Its thresholds were tuned offline on 16 recorded missions
+    (0 false alarms in those 8,072 normal scans).
   - **Live:** **1 of 5** teleports recovered (final error 0.11 m). That was the one run that landed
     in mapped space; the other 4 landed in unmapped space, where the robot correctly refused to
     re-seed.

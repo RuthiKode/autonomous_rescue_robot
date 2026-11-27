@@ -22,6 +22,10 @@ stack (slam_toolbox in mapping mode cannot relocalize after a kidnap) and was no
   foxglove, rviz.
 
 ## Reproduce
+> **Configuration note (2026-11-27):** these results were measured before kidnap relocalization existed
+> (`docs/PHASE10.md`). It is now on by default. To reproduce them exactly, set `relocalization_enabled: false`
+> in `src/rescue_mission/config/mission.yaml` and rebuild.
+
 ```bash
 scripts/failure_tests.sh collapsed          # 10 runs, about 1.5 h; results/failure_tests/runs.csv
 scripts/week8_followup.sh                   # block seed 3 re-run + one full-launch run with verification

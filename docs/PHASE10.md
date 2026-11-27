@@ -54,7 +54,10 @@ The 16 missions are the 5 teleport and 4 block tests from week 8, plus own-selec
 (an endpoint counted as a hit within 0.15 m of a wall) at 1 s intervals. Its second-best poses scored
 0.71-0.91, too close to the best to judge confidence, so it was replaced by the soft score below.
 
-**Detection** (scan scored every 0.5 s; only scans with ≥ 30 endpoints on known cells):
+**Detection** (scan scored every 0.5 s; only scans with ≥ 30 endpoints on known cells). These bags are
+the calibration set, and the thresholds were chosen on them, so the zeros below are not a held-out
+result. The held-out evidence is the live tests: 5 of 5 kidnaps detected, and no false alarm in 5
+kidnap-free missions.
 
 | threshold | checks in a row | false kidnaps in 8,072 normal scans (collapsed 3,031, rooms 3,981, open_plan 1,060) | teleports detected |
 |---|---|---|---|
@@ -103,6 +106,10 @@ of a 2 m disc around the true landing spot that was known in the map just before
 | block | 3 | n/a | no kidnap flagged | - | - | **yes** | DONE, 0.99 | 0.06 m |
 | normal | 1 (collapsed) | n/a | no kidnap flagged, SLAM never paused | - | - | - | DONE, 0.99 (90 % at 142 s) | ATE 0.02 m |
 | normal | 1 (rooms) | n/a | no kidnap flagged, SLAM never paused | - | - | - | DONE, 0.99 (90 % at 311 s) | ATE 0.02 m |
+
+**Full launch:** the README's main command (`full_mission.launch.py world:=collapsed explorer:=own
+verify:=true detector:=yolo`) was run once headless with relocalization on (`scripts/full_mission_check.sh`).
+The mission ended DONE (no frontier left), with 0 tracebacks, 0 crashed processes and no kidnap flag.
 
 **Decision: shipped enabled** (`relocalization_enabled: true` in `mission.yaml`). Teleport recovery
 went from 0/5 to 1/5, block stayed 3/3, and no run had a false kidnap or a wrong re-seed. Set the

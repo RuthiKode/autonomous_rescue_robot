@@ -19,6 +19,10 @@ Plan gate for week 9: *full sweep, every table generated from the CSV only.*
 Worlds: collapsed, rooms, open_plan.
 
 ## Reproduce
+> **Configuration note (2026-11-27):** these results were measured before kidnap relocalization existed
+> (`docs/PHASE10.md`). It is now on by default. To reproduce them exactly, set `relocalization_enabled: false`
+> in `src/rescue_mission/config/mission.yaml` and rebuild.
+
 ```bash
 scripts/sweep.sh 1 6                                   # resumable; runs one simulation at a time
 python3 scripts/make_tables.py results/sweep docs/results

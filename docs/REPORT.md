@@ -19,7 +19,7 @@ deviations and known issues.
 | 10 | Foxglove layout, plots, demo recording | layout and offline replay video; no Foxglove screen recording | `docs/PHASE9.md`, `docs/FOXGLOVE.md` |
 | 11 | ablations, README, tests, CI | README; 211 tests pass locally; CI passes on GitHub (first run 2026-11-25); ablations limited to the sweep's two (verification, fine-tuning) | below |
 | 12 | write-up, resume claims traced | this file, `docs/RESUME_CLAIMS.md` | |
-| after | kidnap recovery (week-8 gap) | detection 5/5 offline, 0 false alarms; **teleport 1/5 live** (the one landing in mapped space; 4 landed in unmapped space and were correctly not re-seeded); block 3/3 | `docs/PHASE10.md` |
+| after | kidnap recovery (week-8 gap) | live: detection 5/5, no false alarm in 5 kidnap-free missions; **teleport 1/5 recovered** (the one landing in mapped space; 4 landed in unmapped space and were correctly not re-seeded); block 3/3 | `docs/PHASE10.md` |
 
 ## Main findings
 1. **Detection quality comes from the domain-specific fine-tune.** Paired recall gain +0.61 (95 % CI +0.39 to

@@ -12,9 +12,9 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
 - Built an own frontier selector and mission behaviour tree with recovery branches; missions finish on their
   own in 75-100 % of runs and recover from a blocked corridor in 5 of 5 scripted tests.
 - Added kidnap detection and global relocalization (scan-to-map scoring, grid search over the SLAM map,
-  slam_toolbox pose-graph re-seed), calibrated offline on 16 recorded missions: 5 of 5 teleports
-  detected with 0 false alarms in 8,072 normal scans. It refuses to commit when the match is ambiguous,
-  and made no wrong re-seed in 5 live tests.
+  slam_toolbox pose-graph re-seed). Thresholds were tuned offline on 16 recorded missions. In live tests
+  it detected 5 of 5 kidnaps with no false alarm in 5 kidnap-free missions. It refuses to commit when
+  the match is ambiguous, and made no wrong re-seed.
 - Built a seeded evaluation harness (coverage, map IoU, ATE, pin precision/recall, failure injection) and
   generated every results table from CSV; 216 automated tests.
 
@@ -27,7 +27,8 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
 | 60 missions | "60 runs with status ok" | `docs/results/summary.md` header |
 | pin error | 0.18-0.50 m (cell means) | `docs/results/summary.md` (pin error) |
 | missions finish themselves | DONE share 0.75-1.00, own conditions | `docs/results/summary.md` (mission DONE) |
-| kidnap detection offline | 5 of 5 detected, 0 flags in 8,072 normal scans (3 worlds) | `docs/PHASE10.md`, `results/reloc_offline/scores.csv` |
+| kidnap detection, live (held out) | 5 of 5 teleports detected; 0 kidnap flags in 3 block + 2 normal missions (collapsed, rooms) | `docs/PHASE10.md`, `results/phase10/runs/*/launch.log` |
+| kidnap detection, calibration set (not held out: thresholds chosen on it) | 5 of 5 detected, 0 flags in 8,072 normal scans (3 worlds) | `docs/PHASE10.md`, `results/reloc_offline/scores.csv` |
 | no wrong re-seed live | 1 re-seed (error 0.11 m), 4 refusals, 0 wrong | `docs/PHASE10.md`, `results/phase10/runs/*/launch.log` |
 | blocked corridor | 5 of 5 recovered | `docs/PHASE7.md`, `results/failure_tests/runs/*/injection.json` |
 | tests | 216 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-27 |
