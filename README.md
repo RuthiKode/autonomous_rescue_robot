@@ -4,10 +4,11 @@ A ground robot in Gazebo explores unknown disaster-like worlds, maps them, finds
 drops a pin on the map for each survivor. ROS 2 Jazzy, Gazebo Harmonic, slam_toolbox, Nav2, YOLOv8n,
 py_trees. Everything runs headless under WSL2 (Ubuntu 24.04) and is scored by an automated evaluation harness.
 
-![demo frame](docs/media/demo_frame.png)
+![demo](docs/media/demo.gif)
 
-*One mission replayed from its rosbag (`docs/media/demo.mp4`): the SLAM map, the robot path (blue), pins
-(green = verified, grey = rejected, yellow = candidate) and the true survivors (green circles).*
+*One mission replayed from its rosbag (`docs/media/demo.mp4`): the SLAM map growing, the robot (orange) and
+its path (blue), pins (yellow = candidate, red = confirmed, green = verified, grey = rejected) and the true
+survivors (green circles).*
 
 ## What it does
 ```
@@ -20,7 +21,8 @@ sensors (2D lidar, RGB-D camera, IMU, wheel odometry)
 ```
 - **Worlds**: three generated worlds (collapsed, rooms, open_plan) with known survivor poses (`rescue_simulation`).
 - **Mission tree** (`rescue_mission`): explores until no frontier is left (DONE), recovers from stuck robots,
-  localization jumps and unreachable goals, and drives to pins for a close verification view.
+  localization jumps, kidnaps (scan-to-map check, global search, SLAM re-seed) and unreachable goals, and
+  drives to pins for a close verification view.
 - **Evaluation** (`rescue_eval`): one command runs a seeded mission, records a bag, and appends a CSV row with
   coverage, time to 90 %, map IoU, ATE, pin precision/recall/duplicates/error, recoveries, mission outcome.
   Failure injection (`--inject block|teleport`) is built in.
@@ -36,12 +38,20 @@ From the evaluation sweep, 60 runs, 3-5 seeds per cell (`docs/PHASE8.md`, tables
 - Own selector vs explore_lite: own reached 90 % coverage 35 s sooner on average, **not significant**
   (95 % CI -113 to +42 s).
 - Verification as built lowered recall by 0.22 (CI -0.41 to -0.03) without a measurable precision gain.
-- Failure tests (`docs/PHASE7.md`): blocked corridor recovered in 5 of 5 runs; **kidnapped robot (teleport)
-  recovered in 0 of 5**.
-- 211 unit/integration tests pass (`colcon test`, simulation tests skipped).
+- Failure tests (`docs/PHASE7.md`): blocked corridor recovered in 5 of 5 runs; kidnapped robot (teleport)
+  recovered in 0 of 5.
+- Kidnap detection and global relocalization added afterwards (`docs/PHASE10.md`):
+  - **Detection:** the scan is scored against the map. Offline on 16 recorded missions it caught
+    5 of 5 teleports, with 0 false alarms in 8,072 normal scans.
+  - **Live:** **1 of 5** teleports recovered (final error 0.11 m). That was the one run that landed
+    in mapped space; the other 4 landed in unmapped space, where the robot correctly refused to
+    re-seed.
+  - **No regression:** blocked corridor 3 of 3, still no false alarms.
+- 216 unit/integration tests pass (`colcon test`, simulation tests skipped).
 
 ## Limitations
-- No global relocalization: after a kidnap the SLAM pose stays 5-10 m wrong (0 of 5 recovered).
+- A kidnap into space the robot has not mapped yet is not recovered: the pose stays 4.6-9.9 m wrong
+  (4 of 5 live teleports). Kidnaps into mapped space are recovered.
 - The rooms world is weak for every explorer: ATE 0.4-1.5 m, map IoU 0.48-0.81, 3.5-5.2 recoveries per run (own mission).
 - 3-5 seeds per condition, not the planned 10 (the sweep lost most of its time to simulator and DDS leaks,
   `docs/PHASE8.md`); most comparisons are not statistically separated.
@@ -55,6 +65,9 @@ cd ~/autonomous_rescue_robot
 scripts/fetch_third_party.sh               # explore_lite at a pinned commit
 rosdep install --from-paths src -y --ignore-src
 colcon build && source install/setup.bash
+
+# a live mission with the Gazebo 3D window open (WSLg on Windows 11, or any desktop)
+scripts/gui_demo.sh collapsed
 
 # whole system, headless (detector weights: train with scripts/train_detector.py, not in the repository)
 ros2 launch rescue_bringup full_mission.launch.py world:=collapsed explorer:=own verify:=true \
@@ -81,11 +94,11 @@ YOLO runs in its own venv (`~/venvs/yolo`, Ultralytics with CUDA).
 | `src/rescue_exploration`, `rescue_mission` | frontier selector, mission behaviour tree |
 | `src/rescue_eval` | evaluation harness, metrics, failure injection |
 | `src/rescue_bringup` | launch files (sim, mapping, full mission) |
-| `docs/PHASE1..9.md` | per-phase results, reproduction commands, deviations, known issues |
+| `docs/PHASE1..10.md` | per-phase results, reproduction commands, deviations, known issues |
 | `docs/REPORT.md`, `docs/RESUME_CLAIMS.md` | final write-up; claims with their sources |
 | `foxglove/` | Foxglove layout (`docs/FOXGLOVE.md`) |
 
 ## Licence notes
-Ultralytics YOLOv8 is AGPL-3.0; the detector node imports it at run time, so distributing this system with
+The code in this repository is MIT-licensed (`LICENSE`). Ultralytics YOLOv8 is AGPL-3.0; the detector node imports it at run time, so distributing this system with
 the detector falls under AGPL terms. explore_lite (m-explore-ros2) is BSD; `scripts/fetch_third_party.sh` fetches it at a
 pinned commit into `src/third_party` (not committed). Model weights, bags and datasets are not committed.

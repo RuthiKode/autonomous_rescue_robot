@@ -1,0 +1,22 @@
+{
+ "kind": "block",
+ "at_sim_s": 90.0,
+ "ok": true,
+ "what": "wall at (3.54, -0.87) ahead of the robot",
+ "coverage_before": 0.7913807500998439,
+ "counts_before": {
+  "goals_sent": 6,
+  "goals_failed": 0,
+  "recoveries": 0,
+  "verifications": 0
+ },
+ "log_index": 766,
+ "mission_state": "DONE",
+ "coverage_after": 0.9942272083651018,
+ "goals_after": 2,
+ "recoveries_after": 1,
+ "pose_error_final_m": 0.08814454935740663,
+ "pose_error_peak_m": 0.09695060663672896,
+ "recovered": true,
+ "verdict": "mission DONE, coverage 0.99, 2 goals and 1 recoveries after, pose error 0.09 m (peak 0.10 m)"
+}

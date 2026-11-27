@@ -264,3 +264,8 @@ The riskiest items are the Gazebo GUI under WSL2, narrow-gap navigation and dete
 | slam_toolbox's pose jumps by 1-1.5 m in symmetric, corridor-like layouts and does not recover (measured in the rooms world, Phase 3: 2 of 3 runs) | Detect the jump in the mission tree (map-to-odom change in one step), stop and re-scan; check whether re-localization works before relying on it |
 | Gazebo non-determinism blurs comparisons | Use more seeds and compare conditions pairwise on the same seeds |
 | The schedule slips | Cut, in order: custom dashboard, extra ablations, extra world variants. Never cut the evaluation |
+
+## Follow-up session (2026-11-27, `docs/PLAN_V1.md`)
+Kidnap detection and global relocalization (`docs/PHASE10.md`): teleport 1/5 live (from 0/5; the other
+four landed in unmapped space and were correctly not re-seeded), block 3/3, no false alarms.
+Also: MIT licence, Gazebo window script, clean `git status`, 216 tests, v1.0.0 release.

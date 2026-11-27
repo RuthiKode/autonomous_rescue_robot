@@ -11,8 +11,12 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
   0 duplicate pins across 60 evaluated missions, with 0.2-0.5 m pin error.
 - Built an own frontier selector and mission behaviour tree with recovery branches; missions finish on their
   own in 75-100 % of runs and recover from a blocked corridor in 5 of 5 scripted tests.
+- Added kidnap detection and global relocalization (scan-to-map scoring, grid search over the SLAM map,
+  slam_toolbox pose-graph re-seed), calibrated offline on 16 recorded missions: 5 of 5 teleports
+  detected with 0 false alarms in 8,072 normal scans. It refuses to commit when the match is ambiguous,
+  and made no wrong re-seed in 5 live tests.
 - Built a seeded evaluation harness (coverage, map IoU, ATE, pin precision/recall, failure injection) and
-  generated every results table from CSV; 211 automated tests.
+  generated every results table from CSV; 216 automated tests.
 
 ## Sources
 | claim | number | source |
@@ -23,12 +27,15 @@ Rule (docs/PLAN.md, week 12): every claim traces to a measured result. Numbers a
 | 60 missions | "60 runs with status ok" | `docs/results/summary.md` header |
 | pin error | 0.18-0.50 m (cell means) | `docs/results/summary.md` (pin error) |
 | missions finish themselves | DONE share 0.75-1.00, own conditions | `docs/results/summary.md` (mission DONE) |
+| kidnap detection offline | 5 of 5 detected, 0 flags in 8,072 normal scans (3 worlds) | `docs/PHASE10.md`, `results/reloc_offline/scores.csv` |
+| no wrong re-seed live | 1 re-seed (error 0.11 m), 4 refusals, 0 wrong | `docs/PHASE10.md`, `results/phase10/runs/*/launch.log` |
 | blocked corridor | 5 of 5 recovered | `docs/PHASE7.md`, `results/failure_tests/runs/*/injection.json` |
-| tests | 211 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-25 |
+| tests | 216 tests, 0 errors, 0 failures, 2 skipped | `colcon test-result` (`scripts/run_all_tests.sh`), 2026-11-27 |
 
 ## Do not claim
 - That the own selector beats explore_lite (difference -35 s to 90 %, CI -113 to +42 s: not separated).
 - That verification improves precision (-0.08, CI -0.28 to +0.12) — it lowered recall.
-- Recovery from kidnapping/teleport (0 of 5).
+- General recovery from kidnapping. It works only when the robot lands in mapped space: 1 of 5 live
+  teleports recovered, and 4 landed in unmapped space (`docs/PHASE10.md`).
 - "10+ seeds" (3-5 per cell were completed).
 - Real-robot results (simulation only).
