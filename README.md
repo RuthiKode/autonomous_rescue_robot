@@ -100,7 +100,13 @@ colcon build && source install/setup.bash
 # a live mission with the Gazebo 3D window open (WSLg on Windows 11, or any desktop)
 scripts/gui_demo.sh collapsed
 
-# whole system, headless (detector weights: train with scripts/train_detector.py, not in the repository)
+# detector weights: attached to the v1.3.0 release (not in the repository), or train your own with
+# scripts/train_detector.py
+mkdir -p results/detector/runs/all_x/weights && curl -L -o results/detector/runs/all_x/weights/best.pt \
+    https://github.com/RuthiKode/autonomous_rescue_robot/releases/download/v1.3.0/rescue_yolov8n_best.pt
+# sha256 b3cdaf2c8917ac1cfc4e07f07ce44ce7b4e3a63f47c9c259f800162d5c08d407
+
+# whole system, headless
 ros2 launch rescue_bringup full_mission.launch.py world:=collapsed explorer:=own verify:=true \
     detector:=yolo model:=results/detector/runs/all_x/weights/best.pt
 
@@ -132,4 +138,5 @@ YOLO runs in its own venv (`~/venvs/yolo`, Ultralytics with CUDA).
 ## Licence notes
 The code in this repository is MIT-licensed (`LICENSE`). Ultralytics YOLOv8 is AGPL-3.0; the detector node imports it at run time, so distributing this system with
 the detector falls under AGPL terms. explore_lite (m-explore-ros2) is BSD; `scripts/fetch_third_party.sh` fetches it at a
-pinned commit into `src/third_party` (not committed). Model weights, bags and datasets are not committed.
+pinned commit into `src/third_party` (not committed). Model weights, bags and datasets are not committed. The
+fine-tuned detector weights are a download on the v1.3.0 release; being derived from YOLOv8, they are AGPL-3.0, not MIT.
